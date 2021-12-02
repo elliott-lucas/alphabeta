@@ -61,8 +61,6 @@ class Game():
 				if score < bestScoreP1:
 					bestScoreP1 = score
 					bestPathP1 = p
-		
-		print("Blue hexagons needed: %s" % bestScoreP1)
 								
 		bestPathP2 = None
 		bestScoreP2 = float('inf')
@@ -80,9 +78,7 @@ class Game():
 					bestScoreP2 = score
 					bestPathP2 = p
 		
-		print("Red hexagons needed: %s" % bestScoreP2)
-		
-		return bestScoreP2 - bestScoreP1
+		return bestScoreP2 - bestScoreP1, bestPathP1, bestPathP2
 	
 	def findPath(self, start, goal, p):
 		frontier = []
@@ -161,7 +157,7 @@ class Game():
 						if self.board[self.currentHexagon[0]][self.currentHexagon[1]] == 0 or (self.currentPlayer == -1 and self.isFirstTurn):
 							self.board[self.currentHexagon[0]][self.currentHexagon[1]] = self.currentPlayer
 							
-							eval = self.evaluateGame()
+							eval, path1, path2 = self.evaluateGame()
 							
 							print("Evaluation: " + str(eval))
 							if eval < 0:
@@ -193,6 +189,12 @@ class Game():
 		for r in range(0, int(HEXAGON_SIZE/4),3):
 			pygame.gfxdraw.polygon(self.gameWindow.grid_area, [((self.currentHexagon[0]+0.5) * HEXAGON_SIZE * math.sqrt(3) + self.currentHexagon[1] * HEXAGON_SIZE * math.sqrt(3)/2 + (HEXAGON_SIZE-r) * math.cos(2 * math.pi * (i / 6 + 1/12)), (self.currentHexagon[1]+0.675) * HEXAGON_SIZE * 1.5 + (HEXAGON_SIZE-r) * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], (0,255,0))
 			pygame.gfxdraw.aapolygon(self.gameWindow.grid_area, [((self.currentHexagon[0]+0.5) * HEXAGON_SIZE * math.sqrt(3) + self.currentHexagon[1] * HEXAGON_SIZE * math.sqrt(3)/2 + (HEXAGON_SIZE-r) * math.cos(2 * math.pi * (i / 6 + 1/12)), (self.currentHexagon[1]+0.675) * HEXAGON_SIZE * 1.5 + (HEXAGON_SIZE-r) * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], (0,255,0))
+		
+		eval, path1, path2 = self.evaluateGame()
+		
+		for p in path1:
+			pygame.gfxdraw.aapolygon(self.gameWindow.grid_area, [((p[0]+0.5) * HEXAGON_SIZE * math.sqrt(3) + p[1] * HEXAGON_SIZE * math.sqrt(3)/2 + (HEXAGON_SIZE-15) * math.cos(2 * math.pi * (i / 6 + 1/12)), (p[1]+0.675) * HEXAGON_SIZE * 1.5 + (HEXAGON_SIZE-15) * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], (0,255,0))
+			pygame.gfxdraw.filled_polygon(self.gameWindow.grid_area, [((p[0]+0.5) * HEXAGON_SIZE * math.sqrt(3) + p[1] * HEXAGON_SIZE * math.sqrt(3)/2 + (HEXAGON_SIZE-15) * math.cos(2 * math.pi * (i / 6 + 1/12)), (p[1]+0.675) * HEXAGON_SIZE * 1.5 + (HEXAGON_SIZE-15) * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], (0,255,0))
 		
 		
 		self.gameWindow.root.blit(self.gameWindow.grid_area, (PADDING_X, PADDING_Y))
