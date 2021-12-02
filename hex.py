@@ -16,31 +16,11 @@ PADDING_Y = HEXAGON_SIZE
 SCREEN_WIDTH  = int(math.sqrt(3)/2 * HEXAGON_SIZE * 2 * (GRID_WIDTH + math.floor(GRID_HEIGHT/2)) + PADDING_X * 2)
 SCREEN_HEIGHT = int(HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5) + PADDING_Y * 2)
 
-
-		
-class Hexagon():
-	def __init__(self, x, y):
-		Hexagon.colors = {-1: (200, 0, 0), 0: (255, 255, 255), 1: (0, 0, 200)}
-		self.x        = x
-		self.y        = y
-		self.owner    = 0
-		self.selected = False
-		self.color    = Hexagon.colors[self.owner]
-		
-	def setOwner(self, value):
-		self.owner = value
-		self.color = Hexagon.colors[self.owner]
-		
-	def drawHexagon(self, surface):
-		pygame.gfxdraw.aapolygon(surface, [((self.x+0.5) * HEXAGON_SIZE * math.sqrt(3) + self.y * HEXAGON_SIZE * math.sqrt(3)/2 + HEXAGON_SIZE * math.cos(2 * math.pi * (i / 6 + 1/12)), (self.y+0.675) * HEXAGON_SIZE * 1.5 + HEXAGON_SIZE * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], self.color)
-		pygame.gfxdraw.filled_polygon(surface, [((self.x+0.5) * HEXAGON_SIZE * math.sqrt(3) + self.y * HEXAGON_SIZE * math.sqrt(3)/2 ++ HEXAGON_SIZE * math.cos(2 * math.pi * (i / 6 + 1/12)), (self.y+0.675) * HEXAGON_SIZE * 1.5 + HEXAGON_SIZE * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], self.color)
-
-		pygame.gfxdraw.aapolygon(surface, [((self.x+0.5) * HEXAGON_SIZE * math.sqrt(3) + self.y * HEXAGON_SIZE * math.sqrt(3)/2 + HEXAGON_SIZE * math.cos(2 * math.pi * (i / 6 + 1/12)), (self.y+0.675) * HEXAGON_SIZE * 1.5 + HEXAGON_SIZE * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], (0,0,0))
-		
-	def drawSelected(self, surface):
-		for r in range(0, int(HEXAGON_SIZE/4),3):
-			pygame.gfxdraw.polygon(surface, [((self.x+0.5) * HEXAGON_SIZE * math.sqrt(3) + self.y * HEXAGON_SIZE * math.sqrt(3)/2 + (HEXAGON_SIZE-r) * math.cos(2 * math.pi * (i / 6 + 1/12)), (self.y+0.675) * HEXAGON_SIZE * 1.5 + (HEXAGON_SIZE-r) * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], (0,255,0))
-			pygame.gfxdraw.aapolygon(surface, [((self.x+0.5) * HEXAGON_SIZE * math.sqrt(3) + self.y * HEXAGON_SIZE * math.sqrt(3)/2 + (HEXAGON_SIZE-r) * math.cos(2 * math.pi * (i / 6 + 1/12)), (self.y+0.675) * HEXAGON_SIZE * 1.5 + (HEXAGON_SIZE-r) * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], (0,255,0))
+def convertTo1D(coords):
+	return (coords[0] * GRID_WIDTH) + coords[1]
+	
+def convertTo2D(val):
+	return [val % GRID_WIDTH, val - (val % GRID_WIDTH)]
 
 class Window():
 	def __init__(self):
@@ -53,123 +33,171 @@ class Window():
 		
 		self.font      = pygame.font.SysFont("arialblack", 30)
 		self.text_area = self.font.render("", False, (255, 255, 255))
-		
 
 class Game():
-	def __init__(self):
-		self.hexagons         = []
-		self.hexagon_selected = [0,0]
-		self.current_player   = 1
-		self.first_turn       = True
-		self.game_won 		  = False
-		
+	def __init__(self):		
+		self.board          = [[0 for i in range(GRID_WIDTH)] for j in range(GRID_HEIGHT)]
+		self.currentHexagon = [0,0]
+		self.playerColours  = {-1: (200, 0, 0), 0: (255, 255, 255), 1: (0, 0, 200)}
+		self.currentPlayer  = 1
+		self.isFirstTurn    = True
+		self.isGameWon      = False
+		self.isGameRunning  = False
+		self.gameWindow     = Window()
+	
+	def evaluateGame(self):
+		bestPathP1 = None
+		bestScoreP1 = float('inf')
 		for i in range(0, GRID_WIDTH):
-			self.hexagons.append([])
-			for j in range(0, GRID_HEIGHT):
-				self.hexagons[i].append(Hexagon(i, j))
-				
-		self.window = Window()
+			for j in range(0, GRID_WIDTH):
+				p = self.findPath([i, 0], [j, GRID_HEIGHT-1], 1)
+				if len(p) == 0:
+					score = float('inf')
+				else:
+					score = len(p)
+				for k in p:
+					if self.board[k[0]][k[1]] == 1:
+						score -= 1
+				if score < bestScoreP1:
+					bestScoreP1 = score
+					bestPathP1 = p
 		
-	def checkRoute(self, x, y, checked):
-		checked.append([x, y])
-		if self.hexagons[x][y].owner == 1 and y == GRID_HEIGHT - 1:
-			return 1
-		elif self.hexagons[x][y].owner == -1 and x == GRID_WIDTH - 1:
-			return -1
-		else:
-			neighbours = [[x, y-1], [x+1, y-1], [x-1, y], [x+1, y], [x-1, y+1], [x, y+1]]
+		print("Blue hexagons needed: %s" % bestScoreP1)
+								
+		bestPathP2 = None
+		bestScoreP2 = float('inf')
+		for i in range(0, GRID_HEIGHT):
+			for j in range(0, GRID_HEIGHT):
+				p = self.findPath([0, i], [GRID_WIDTH-1, j], -1)
+				if len(p) == 0:
+					score = float('inf')
+				else:
+					score = len(p)
+				for k in p:
+					if self.board[k[0]][k[1]] == -1:
+						score -= 1
+				if score < bestScoreP2:
+					bestScoreP2 = score
+					bestPathP2 = p
+		
+		print("Red hexagons needed: %s" % bestScoreP2)
+		
+		return bestScoreP2 - bestScoreP1
+	
+	def findPath(self, start, goal, p):
+		frontier = []
+		frontier.append((0, start))
+		
+		cameFrom = {}
+		cameFrom[convertTo1D(start)] = None
+		
+		costSoFar = {}
+		costSoFar[convertTo1D(start)] = 0
+		
+		while len(frontier) > 0:
+			current = frontier.pop(0)[1]
+			
+			if current == goal:
+				break
+			
+			neighbours = [[current[0],   current[1]-1], 
+						  [current[0]+1, current[1]-1], 
+						  [current[0]-1, current[1]], 
+						  [current[0]+1, current[1]], 
+						  [current[0]-1, current[1]+1], 
+						  [current[0],   current[1]+1]]
+			
+			valid = []
 			
 			for n in neighbours:
 				if n[0] < GRID_WIDTH and n[1] < GRID_HEIGHT and n[0] >= 0 and n[1] >= 0:
-					if n not in checked:
-						if self.hexagons[n[0]][n[1]].owner == self.hexagons[x][y].owner:
-							result = self.checkRoute(n[0], n[1], checked)
-							if result != 0:
-								return result
-			return 0
-	
-	def run(self):
-		running = True
-
-		while running:
+					if self.board[n[0]][n[1]] in [p, 0]:
+						valid.append(n)
+			
+			for n in valid:
+				cost = costSoFar[convertTo1D(current)] + 1
+				if convertTo1D(n) not in cameFrom or cost < costSoFar[convertTo1D(n)]:
+					costSoFar[convertTo1D(n)] = cost
+					priority = cost
+					frontier.append((priority, n))
+					cameFrom[convertTo1D(n)] = current
+		
+		if convertTo1D(goal) in cameFrom:
+			current = goal
+			path = []
+			while current != start:
+				path.append(current)
+				current = cameFrom[convertTo1D(current)]
+			path.append(start)
+			path.reverse()
+		else:
+			path = []
+		
+		return path	
+		
+	def runGame(self):
+		self.isGameRunning = True
+		
+		while self.isGameRunning:
 			for event in pygame.event.get():
 				if event.type == pygame.QUIT:
-					running = False
+					self.isGameRunning = False
 					pygame.quit()
 					exit()
 				elif event.type == pygame.KEYDOWN:
 					if event.key == pygame.K_ESCAPE:
+						self.isGameRunning = False
 						pygame.quit()
 						exit()
-						
-					if self.game_won == False:
-						if event.key == pygame.K_RIGHT:
-							self.hexagon_selected[0] = min(self.hexagon_selected[0] + 1, GRID_WIDTH - 1)
-						elif event.key == pygame.K_LEFT:
-							self.hexagon_selected[0] = max(self.hexagon_selected[0] - 1, 0)
-						elif event.key == pygame.K_DOWN:
-							self.hexagon_selected[1] = min(self.hexagon_selected[1] + 1, GRID_HEIGHT - 1)
-						elif event.key == pygame.K_UP:
-							self.hexagon_selected[1] = max(self.hexagon_selected[1] - 1, 0)
-						elif event.key == pygame.K_RETURN:
-							if self.hexagons[self.hexagon_selected[0]][self.hexagon_selected[1]].owner == 0 or (self.current_player == -1 and self.first_turn):
-								self.hexagons[self.hexagon_selected[0]][self.hexagon_selected[1]].setOwner(self.current_player)
-								if (self.current_player == -1 and self.first_turn):
-									self.first_turn = False
+					elif event.key == pygame.K_RIGHT:
+						self.currentHexagon[0] = min(self.currentHexagon[0] + 1, GRID_WIDTH - 1)
+					elif event.key == pygame.K_LEFT:
+						self.currentHexagon[0] = max(self.currentHexagon[0] - 1, 0)
+					elif event.key == pygame.K_DOWN:
+						self.currentHexagon[1] = min(self.currentHexagon[1] + 1, GRID_HEIGHT - 1)
+					elif event.key == pygame.K_UP:
+						self.currentHexagon[1] = max(self.currentHexagon[1] - 1, 0)
+					elif event.key == pygame.K_RETURN:
+						if self.board[self.currentHexagon[0]][self.currentHexagon[1]] == 0 or (self.currentPlayer == -1 and self.isFirstTurn):
+							self.board[self.currentHexagon[0]][self.currentHexagon[1]] = self.currentPlayer
+							
+							eval = self.evaluateGame()
+							
+							print("Evaluation: " + str(eval))
+							if eval < 0:
+								print("Red has the advantage")
+							elif eval > 0:
+								print("Blue has the advantage")
+							else:
+								print("Game is even")
 								
-								if self.current_player == 1:
-									for i in range(0, GRID_WIDTH):
-										if self.hexagons[i][0].owner == 1 and self.game_won == False:
-											result = self.checkRoute(i, 0, [])
-											if result != 0:
-												self.game_won = True
-												self.window.text_area = self.window.font.render("Blue wins!", False, (255,255,255))
-												
-								else:
-									for j in range(0, GRID_HEIGHT):
-										if self.hexagons[0][j].owner == -1 and self.game_won == False:
-											result = self.checkRoute(0, j, [])
-											if result != 0:
-												self.game_won = True
-												self.window.text_area = self.window.font.render("Red wins!", False, (255,255,255))
-											
-								self.current_player = -self.current_player
-			self.draw()
-	
-	def draw(self):
-		pygame.gfxdraw.aapolygon(self.window.grid_area, (
-			(HEXAGON_WIDTH/2, 0), 
-			(HEXAGON_WIDTH * (GRID_WIDTH-0.5), 0), 
-			(HEXAGON_WIDTH * (GRID_WIDTH) + HEXAGON_WIDTH/2 * (GRID_HEIGHT - 2), HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5)), 
-			(HEXAGON_WIDTH/2 * (GRID_HEIGHT), HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5))), (0,0,200))
-	
-		pygame.gfxdraw.filled_polygon(self.window.grid_area, (
-			(HEXAGON_WIDTH/2, 0), 
-			(HEXAGON_WIDTH * (GRID_WIDTH-0.5), 0), 
-			(HEXAGON_WIDTH * (GRID_WIDTH) + HEXAGON_WIDTH/2 * (GRID_HEIGHT - 2), HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5)), 
-			(HEXAGON_WIDTH/2 * (GRID_HEIGHT), HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5))), (0,0,200))
+							self.currentPlayer = -self.currentPlayer
+						
+							if (self.currentPlayer == -1 and self.isFirstTurn):
+								self.isFirstTurn == False
+			
+			self.drawGame()
+							
+	def drawGame(self):
+		pygame.gfxdraw.aapolygon(self.gameWindow.grid_area, ((HEXAGON_WIDTH/2, 0), (HEXAGON_WIDTH * (GRID_WIDTH-0.5), 0), (HEXAGON_WIDTH * (GRID_WIDTH) + HEXAGON_WIDTH/2 * (GRID_HEIGHT - 2), HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5)), (HEXAGON_WIDTH/2 * (GRID_HEIGHT), HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5))), self.playerColours[1])
+		pygame.gfxdraw.filled_polygon(self.gameWindow.grid_area, ((HEXAGON_WIDTH/2, 0), (HEXAGON_WIDTH * (GRID_WIDTH-0.5), 0), (HEXAGON_WIDTH * (GRID_WIDTH) + HEXAGON_WIDTH/2 * (GRID_HEIGHT - 2), HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5)), (HEXAGON_WIDTH/2 * (GRID_HEIGHT), HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5))), self.playerColours[1])
+		pygame.gfxdraw.aapolygon(self.gameWindow.grid_area, ((0, 1.5 * HEXAGON_SIZE), (GRID_WIDTH * HEXAGON_WIDTH, 0.5 * HEXAGON_SIZE), (HEXAGON_WIDTH * (GRID_WIDTH) + HEXAGON_WIDTH/2 * (GRID_HEIGHT - 1), HEXAGON_SIZE * (1.5 * GRID_HEIGHT - 1)), (HEXAGON_WIDTH/2 * (GRID_HEIGHT - 1), HEXAGON_SIZE * (1.5 * GRID_HEIGHT))), self.playerColours[-1])
+		pygame.gfxdraw.filled_polygon(self.gameWindow.grid_area, ((0, 1.5 * HEXAGON_SIZE), (GRID_WIDTH * HEXAGON_WIDTH, 0.5 * HEXAGON_SIZE), (HEXAGON_WIDTH * (GRID_WIDTH) + HEXAGON_WIDTH/2 * (GRID_HEIGHT - 1), HEXAGON_SIZE * (1.5 * GRID_HEIGHT - 1)), (HEXAGON_WIDTH/2 * (GRID_HEIGHT - 1), HEXAGON_SIZE * (1.5 * GRID_HEIGHT))), self.playerColours[-1])
 		
-		pygame.gfxdraw.aapolygon(self.window.grid_area, (
-			(0, 1.5 * HEXAGON_SIZE), 
-			(GRID_WIDTH * HEXAGON_WIDTH, 0.5 * HEXAGON_SIZE), 
-			(HEXAGON_WIDTH * (GRID_WIDTH) + HEXAGON_WIDTH/2 * (GRID_HEIGHT - 1), HEXAGON_SIZE * (1.5 * GRID_HEIGHT - 1)), 
-			(HEXAGON_WIDTH/2 * (GRID_HEIGHT - 1), HEXAGON_SIZE * (1.5 * GRID_HEIGHT))), (200,0,0))
+		for x in range(0, len(self.board)):
+			for y in range(0, len(self.board[x])):
+				pygame.gfxdraw.aapolygon(self.gameWindow.grid_area, [((x+0.5) * HEXAGON_SIZE * math.sqrt(3) + y * HEXAGON_SIZE * math.sqrt(3)/2 + HEXAGON_SIZE * math.cos(2 * math.pi * (i / 6 + 1/12)), (y+0.675) * HEXAGON_SIZE * 1.5 + HEXAGON_SIZE * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], self.playerColours[self.board[x][y]])
+				pygame.gfxdraw.filled_polygon(self.gameWindow.grid_area, [((x+0.5) * HEXAGON_SIZE * math.sqrt(3) + y * HEXAGON_SIZE * math.sqrt(3)/2 ++ HEXAGON_SIZE * math.cos(2 * math.pi * (i / 6 + 1/12)), (y+0.675) * HEXAGON_SIZE * 1.5 + HEXAGON_SIZE * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], self.playerColours[self.board[x][y]])
+				pygame.gfxdraw.aapolygon(self.gameWindow.grid_area, [((x+0.5) * HEXAGON_SIZE * math.sqrt(3) + y * HEXAGON_SIZE * math.sqrt(3)/2 + HEXAGON_SIZE * math.cos(2 * math.pi * (i / 6 + 1/12)), (y+0.675) * HEXAGON_SIZE * 1.5 + HEXAGON_SIZE * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], (0,0,0))
 		
-		pygame.gfxdraw.filled_polygon(self.window.grid_area, (
-			(0, 1.5 * HEXAGON_SIZE), 
-			(GRID_WIDTH * HEXAGON_WIDTH, 0.5 * HEXAGON_SIZE), 
-			(HEXAGON_WIDTH * (GRID_WIDTH) + HEXAGON_WIDTH/2 * (GRID_HEIGHT - 1), HEXAGON_SIZE * (1.5 * GRID_HEIGHT - 1)), 
-			(HEXAGON_WIDTH/2 * (GRID_HEIGHT - 1), HEXAGON_SIZE * (1.5 * GRID_HEIGHT))), (200,0,0))
-	
-		for i in self.hexagons:
-			for j in i:
-				j.drawHexagon(self.window.grid_area)
+		for r in range(0, int(HEXAGON_SIZE/4),3):
+			pygame.gfxdraw.polygon(self.gameWindow.grid_area, [((self.currentHexagon[0]+0.5) * HEXAGON_SIZE * math.sqrt(3) + self.currentHexagon[1] * HEXAGON_SIZE * math.sqrt(3)/2 + (HEXAGON_SIZE-r) * math.cos(2 * math.pi * (i / 6 + 1/12)), (self.currentHexagon[1]+0.675) * HEXAGON_SIZE * 1.5 + (HEXAGON_SIZE-r) * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], (0,255,0))
+			pygame.gfxdraw.aapolygon(self.gameWindow.grid_area, [((self.currentHexagon[0]+0.5) * HEXAGON_SIZE * math.sqrt(3) + self.currentHexagon[1] * HEXAGON_SIZE * math.sqrt(3)/2 + (HEXAGON_SIZE-r) * math.cos(2 * math.pi * (i / 6 + 1/12)), (self.currentHexagon[1]+0.675) * HEXAGON_SIZE * 1.5 + (HEXAGON_SIZE-r) * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], (0,255,0))
 		
-		self.hexagons[self.hexagon_selected[0]][self.hexagon_selected[1]].drawSelected(self.window.grid_area)
 		
-		self.window.root.blit(self.window.grid_area, (PADDING_X, PADDING_Y))
-		self.window.root.blit(self.window.text_area, ((SCREEN_WIDTH - self.window.text_area.get_rect().width)/2, (PADDING_Y - self.window.text_area.get_rect().height)/2))
+		self.gameWindow.root.blit(self.gameWindow.grid_area, (PADDING_X, PADDING_Y))
+		self.gameWindow.root.blit(self.gameWindow.text_area, ((SCREEN_WIDTH - self.gameWindow.text_area.get_rect().width)/2, (PADDING_Y - self.gameWindow.text_area.get_rect().height)/2))
 		pygame.display.flip()
 		
 game = Game()
-game.run()
+game.runGame()
