@@ -40,13 +40,14 @@ class Game():
 		self.currentHexagon = [0,0]
 		self.playerColours  = {-1: (200, 0, 0), 0: (255, 255, 255), 1: (0, 0, 200)}
 		self.currentPlayer  = 1
+		self.bestPaths      = list(self.evaluateGame()[1:])
 		self.isFirstTurn    = True
 		self.isGameWon      = False
 		self.isGameRunning  = False
 		self.gameWindow     = Window()
 	
 	def evaluateGame(self):
-		bestPathP1 = None
+		bestPathP1 = []
 		bestScoreP1 = float('inf')
 		for i in range(0, GRID_WIDTH):
 			for j in range(0, GRID_WIDTH):
@@ -62,7 +63,7 @@ class Game():
 					bestScoreP1 = score
 					bestPathP1 = p
 								
-		bestPathP2 = None
+		bestPathP2 = []
 		bestScoreP2 = float('inf')
 		for i in range(0, GRID_HEIGHT):
 			for j in range(0, GRID_HEIGHT):
@@ -77,55 +78,58 @@ class Game():
 				if score < bestScoreP2:
 					bestScoreP2 = score
 					bestPathP2 = p
-		
+				
 		return bestScoreP2 - bestScoreP1, bestPathP1, bestPathP2
 	
 	def findPath(self, start, goal, p):
-		frontier = []
-		frontier.append((0, start))
-		
-		cameFrom = {}
-		cameFrom[convertTo1D(start)] = None
-		
-		costSoFar = {}
-		costSoFar[convertTo1D(start)] = 0
-		
-		while len(frontier) > 0:
-			current = frontier.pop(0)[1]
+		if self.board[start[0]][start[1]] in [p, 0]:
+			frontier = []
+			frontier.append((0, start))
 			
-			if current == goal:
-				break
+			cameFrom = {}
+			cameFrom[convertTo1D(start)] = None
 			
-			neighbours = [[current[0],   current[1]-1], 
-						  [current[0]+1, current[1]-1], 
-						  [current[0]-1, current[1]], 
-						  [current[0]+1, current[1]], 
-						  [current[0]-1, current[1]+1], 
-						  [current[0],   current[1]+1]]
+			costSoFar = {}
+			costSoFar[convertTo1D(start)] = 0
 			
-			valid = []
+			while len(frontier) > 0:
+				current = frontier.pop(0)[1]
+				
+				if current == goal:
+					break
+				
+				neighbours = [[current[0],   current[1]-1], 
+							  [current[0]+1, current[1]-1], 
+							  [current[0]-1, current[1]], 
+							  [current[0]+1, current[1]], 
+							  [current[0]-1, current[1]+1], 
+							  [current[0],   current[1]+1]]
+				
+				valid = []
+				
+				for n in neighbours:
+					if n[0] < GRID_WIDTH and n[1] < GRID_HEIGHT and n[0] >= 0 and n[1] >= 0:
+						if self.board[n[0]][n[1]] in [p, 0]:
+							valid.append(n)
+				
+				for n in valid:
+					cost = costSoFar[convertTo1D(current)] + 1
+					if convertTo1D(n) not in cameFrom or cost < costSoFar[convertTo1D(n)]:
+						costSoFar[convertTo1D(n)] = cost
+						priority = cost
+						frontier.append((priority, n))
+						cameFrom[convertTo1D(n)] = current
 			
-			for n in neighbours:
-				if n[0] < GRID_WIDTH and n[1] < GRID_HEIGHT and n[0] >= 0 and n[1] >= 0:
-					if self.board[n[0]][n[1]] in [p, 0]:
-						valid.append(n)
-			
-			for n in valid:
-				cost = costSoFar[convertTo1D(current)] + 1
-				if convertTo1D(n) not in cameFrom or cost < costSoFar[convertTo1D(n)]:
-					costSoFar[convertTo1D(n)] = cost
-					priority = cost
-					frontier.append((priority, n))
-					cameFrom[convertTo1D(n)] = current
-		
-		if convertTo1D(goal) in cameFrom:
-			current = goal
-			path = []
-			while current != start:
-				path.append(current)
-				current = cameFrom[convertTo1D(current)]
-			path.append(start)
-			path.reverse()
+			if convertTo1D(goal) in cameFrom:
+				current = goal
+				path = []
+				while current != start:
+					path.append(current)
+					current = cameFrom[convertTo1D(current)]
+				path.append(start)
+				path.reverse()
+			else:
+				path = []
 		else:
 			path = []
 		
@@ -157,15 +161,19 @@ class Game():
 						if self.board[self.currentHexagon[0]][self.currentHexagon[1]] == 0 or (self.currentPlayer == -1 and self.isFirstTurn):
 							self.board[self.currentHexagon[0]][self.currentHexagon[1]] = self.currentPlayer
 							
-							eval, path1, path2 = self.evaluateGame()
+							eval, self.bestPaths[0], self.bestPaths[1] = self.evaluateGame()
 							
-							print("Evaluation: " + str(eval))
-							if eval < 0:
-								print("Red has the advantage")
+							print("Evaluation: " + str(eval) + ", ", end="")
+							if eval == float('inf'):
+								print("Blue has won!")
 							elif eval > 0:
 								print("Blue has the advantage")
-							else:
+							elif eval == 0:
 								print("Game is even")
+							elif eval == float('inf'):
+								print("Red has won!")
+							else:
+								print("Red has the advantage")
 								
 							self.currentPlayer = -self.currentPlayer
 						
@@ -190,12 +198,18 @@ class Game():
 			pygame.gfxdraw.polygon(self.gameWindow.grid_area, [((self.currentHexagon[0]+0.5) * HEXAGON_SIZE * math.sqrt(3) + self.currentHexagon[1] * HEXAGON_SIZE * math.sqrt(3)/2 + (HEXAGON_SIZE-r) * math.cos(2 * math.pi * (i / 6 + 1/12)), (self.currentHexagon[1]+0.675) * HEXAGON_SIZE * 1.5 + (HEXAGON_SIZE-r) * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], (0,255,0))
 			pygame.gfxdraw.aapolygon(self.gameWindow.grid_area, [((self.currentHexagon[0]+0.5) * HEXAGON_SIZE * math.sqrt(3) + self.currentHexagon[1] * HEXAGON_SIZE * math.sqrt(3)/2 + (HEXAGON_SIZE-r) * math.cos(2 * math.pi * (i / 6 + 1/12)), (self.currentHexagon[1]+0.675) * HEXAGON_SIZE * 1.5 + (HEXAGON_SIZE-r) * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], (0,255,0))
 		
-		eval, path1, path2 = self.evaluateGame()
+		for p in self.bestPaths[0]:
+			pygame.gfxdraw.aapolygon(self.gameWindow.grid_area, [((p[0]+0.5) * HEXAGON_SIZE * math.sqrt(3) + p[1] * HEXAGON_SIZE * math.sqrt(3)/2 + (HEXAGON_SIZE/2) * math.cos(2 * math.pi * (i / 6 + 1/12)), (p[1]+0.675) * HEXAGON_SIZE * 1.5 + (HEXAGON_SIZE/2) * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], self.playerColours[1])
+			pygame.gfxdraw.filled_polygon(self.gameWindow.grid_area, [((p[0]+0.5) * HEXAGON_SIZE * math.sqrt(3) + p[1] * HEXAGON_SIZE * math.sqrt(3)/2 + (HEXAGON_SIZE/2) * math.cos(2 * math.pi * (i / 6 + 1/12)), (p[1]+0.675) * HEXAGON_SIZE * 1.5 + (HEXAGON_SIZE/2) * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], self.playerColours[1])
 		
-		for p in path1:
-			pygame.gfxdraw.aapolygon(self.gameWindow.grid_area, [((p[0]+0.5) * HEXAGON_SIZE * math.sqrt(3) + p[1] * HEXAGON_SIZE * math.sqrt(3)/2 + (HEXAGON_SIZE-15) * math.cos(2 * math.pi * (i / 6 + 1/12)), (p[1]+0.675) * HEXAGON_SIZE * 1.5 + (HEXAGON_SIZE-15) * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], (0,255,0))
-			pygame.gfxdraw.filled_polygon(self.gameWindow.grid_area, [((p[0]+0.5) * HEXAGON_SIZE * math.sqrt(3) + p[1] * HEXAGON_SIZE * math.sqrt(3)/2 + (HEXAGON_SIZE-15) * math.cos(2 * math.pi * (i / 6 + 1/12)), (p[1]+0.675) * HEXAGON_SIZE * 1.5 + (HEXAGON_SIZE-15) * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], (0,255,0))
-		
+		for p in self.bestPaths[1]:
+			if p in self.bestPaths[0]:
+				pygame.gfxdraw.aapolygon(self.gameWindow.grid_area, [((p[0]+0.5) * HEXAGON_SIZE * math.sqrt(3) + p[1] * HEXAGON_SIZE * math.sqrt(3)/2 + (HEXAGON_SIZE/2) * math.cos(2 * math.pi * (i / 6 + 1/12)), (p[1]+0.675) * HEXAGON_SIZE * 1.5 + (HEXAGON_SIZE/2) * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], (100, 0, 100))
+				pygame.gfxdraw.filled_polygon(self.gameWindow.grid_area, [((p[0]+0.5) * HEXAGON_SIZE * math.sqrt(3) + p[1] * HEXAGON_SIZE * math.sqrt(3)/2 + (HEXAGON_SIZE/2) * math.cos(2 * math.pi * (i / 6 + 1/12)), (p[1]+0.675) * HEXAGON_SIZE * 1.5 + (HEXAGON_SIZE/2) * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], (100,0,100))
+			else:
+				pygame.gfxdraw.aapolygon(self.gameWindow.grid_area, [((p[0]+0.5) * HEXAGON_SIZE * math.sqrt(3) + p[1] * HEXAGON_SIZE * math.sqrt(3)/2 + (HEXAGON_SIZE/2) * math.cos(2 * math.pi * (i / 6 + 1/12)), (p[1]+0.675) * HEXAGON_SIZE * 1.5 + (HEXAGON_SIZE/2) * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], self.playerColours[-1])
+				pygame.gfxdraw.filled_polygon(self.gameWindow.grid_area, [((p[0]+0.5) * HEXAGON_SIZE * math.sqrt(3) + p[1] * HEXAGON_SIZE * math.sqrt(3)/2 + (HEXAGON_SIZE/2) * math.cos(2 * math.pi * (i / 6 + 1/12)), (p[1]+0.675) * HEXAGON_SIZE * 1.5 + (HEXAGON_SIZE/2) * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], self.playerColours[-1])
+			
 		
 		self.gameWindow.root.blit(self.gameWindow.grid_area, (PADDING_X, PADDING_Y))
 		self.gameWindow.root.blit(self.gameWindow.text_area, ((SCREEN_WIDTH - self.gameWindow.text_area.get_rect().width)/2, (PADDING_Y - self.gameWindow.text_area.get_rect().height)/2))
