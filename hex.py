@@ -3,8 +3,8 @@ import random
 import pygame
 from pygame import gfxdraw
 
-GRID_WIDTH  = 4
-GRID_HEIGHT = 4
+GRID_WIDTH  = 11
+GRID_HEIGHT = 11
 
 HEXAGON_SIZE   = 50
 HEXAGON_WIDTH  = HEXAGON_SIZE * math.sqrt(3)
@@ -51,7 +51,7 @@ class Game():
 		bestScoreP1 = float('inf')
 		for i in range(0, GRID_WIDTH):
 			for j in range(0, GRID_WIDTH):
-				p = self.findPath([i, 0], [j, GRID_HEIGHT-1], 1)
+				p = self.findPath((i, 0), (j, GRID_HEIGHT-1), 1)
 				if len(p) == 0:
 					score = float('inf')
 				else:
@@ -67,7 +67,7 @@ class Game():
 		bestScoreP2 = float('inf')
 		for i in range(0, GRID_HEIGHT):
 			for j in range(0, GRID_HEIGHT):
-				p = self.findPath([0, i], [GRID_WIDTH-1, j], -1)
+				p = self.findPath((0, i), (GRID_WIDTH-1, j), -1)
 				if len(p) == 0:
 					score = float('inf')
 				else:
@@ -87,10 +87,10 @@ class Game():
 			frontier.append((0, start))
 			
 			cameFrom = {}
-			cameFrom[convertTo1D(start)] = None
+			cameFrom[start] = None
 			
 			costSoFar = {}
-			costSoFar[convertTo1D(start)] = 0
+			costSoFar[start] = 0
 			
 			while len(frontier) > 0:
 				current = frontier.pop(0)[1]
@@ -98,12 +98,12 @@ class Game():
 				if current == goal:
 					break
 				
-				neighbours = [[current[0],   current[1]-1], 
-							  [current[0]+1, current[1]-1], 
-							  [current[0]-1, current[1]], 
-							  [current[0]+1, current[1]], 
-							  [current[0]-1, current[1]+1], 
-							  [current[0],   current[1]+1]]
+				neighbours = [(current[0],   current[1]-1), 
+							  (current[0]+1, current[1]-1), 
+							  (current[0]-1, current[1]), 
+							  (current[0]+1, current[1]), 
+							  (current[0]-1, current[1]+1), 
+							  (current[0],   current[1]+1)]
 				
 				valid = []
 				
@@ -113,19 +113,22 @@ class Game():
 							valid.append(n)
 				
 				for n in valid:
-					cost = costSoFar[convertTo1D(current)] + 1
-					if convertTo1D(n) not in cameFrom or cost < costSoFar[convertTo1D(n)]:
-						costSoFar[convertTo1D(n)] = cost
+					if self.board[n[0]][n[1]] != p:
+						cost = costSoFar[current] + 1
+					else:
+						cost = costSoFar[current]
+					if n not in cameFrom or cost < costSoFar[n]:
+						costSoFar[n] = cost
 						priority = cost
 						frontier.append((priority, n))
-						cameFrom[convertTo1D(n)] = current
+						cameFrom[n] = current
 			
-			if convertTo1D(goal) in cameFrom:
+			if goal in cameFrom:
 				current = goal
 				path = []
 				while current != start:
 					path.append(current)
-					current = cameFrom[convertTo1D(current)]
+					current = cameFrom[current]
 				path.append(start)
 				path.reverse()
 			else:
