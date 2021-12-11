@@ -113,10 +113,7 @@ class Game():
 							valid.append(n)
 				
 				for n in valid:
-					if self.board[n[0]][n[1]] != p:
-						cost = costSoFar[current] + 1
-					else:
-						cost = costSoFar[current]
+					cost = costSoFar[current] + 1
 					if n not in cameFrom or cost < costSoFar[n]:
 						costSoFar[n] = cost
 						priority = cost
