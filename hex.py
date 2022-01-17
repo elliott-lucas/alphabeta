@@ -3,8 +3,8 @@ import random
 import pygame
 from pygame import gfxdraw
 
-GRID_WIDTH  = 11
-GRID_HEIGHT = 11
+GRID_WIDTH  = 4
+GRID_HEIGHT = 4
 
 HEXAGON_SIZE   = 50
 HEXAGON_WIDTH  = HEXAGON_SIZE * math.sqrt(3)
@@ -15,12 +15,6 @@ PADDING_Y = HEXAGON_SIZE
 
 SCREEN_WIDTH  = int(math.sqrt(3)/2 * HEXAGON_SIZE * 2 * (GRID_WIDTH + math.floor(GRID_HEIGHT/2)) + PADDING_X * 2)
 SCREEN_HEIGHT = int(HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5) + PADDING_Y * 2)
-
-def convertTo1D(coords):
-	return (coords[0] * GRID_WIDTH) + coords[1]
-	
-def convertTo2D(val):
-	return [val % GRID_WIDTH, val - (val % GRID_WIDTH)]
 
 class Window():
 	def __init__(self):
@@ -40,13 +34,85 @@ class Game():
 		self.currentHexagon = [0,0]
 		self.playerColours  = {-1: (200, 0, 0), 0: (255, 255, 255), 1: (0, 0, 200)}
 		self.currentPlayer  = 1
-		self.bestPaths      = list(self.evaluateGame()[1:])
+		self.bestPaths      = list(self.evaluateGame(self.board)[1:])
 		self.isFirstTurn    = True
 		self.isGameWon      = False
 		self.isGameRunning  = False
+		self.manualMode     = False
 		self.gameWindow     = Window()
-	
-	def evaluateGame(self):
+		
+	def getPossibleMoves(self, board):
+		possibleMoves = {}
+		for i in range(0, GRID_WIDTH):
+			for j in range(0, GRID_HEIGHT):
+				if board[i][j] == 0:
+					possibleMoves[(i, j)] = 0
+		return possibleMoves
+		
+	def minimax(self, board, depth, player):
+		if depth == 0 or self.evaluateGame(board)[0] in [float('inf'), float('-inf')]:
+			return self.evaluateGame(board)[0], depth
+		else:
+			possibleMoves = self.getPossibleMoves(board)
+						
+			if player == 1:
+				best = (float('-inf'), float('-inf'))
+				for m in possibleMoves:
+					board[m[0]][m[1]] = player
+					result = self.minimax(board.copy(), depth - 1, -1)
+					if result[0] > best[0] or (result[0] == best[0] and result[1] > best[1]):
+						best = result
+					board[m[0]][m[1]] = 0
+				return best
+			else:
+				best = (float('inf'), float('-inf'))
+				for m in possibleMoves:
+					board[m[0]][m[1]] = player
+					result = self.minimax(board.copy(), depth - 1, 1)
+					if result[0] < best[0] or (result[0] == best[0] and result[1] > best[1]):
+						best = result
+					board[m[0]][m[1]] = 0
+				return best
+					
+	def pickMove(self, player):
+		possibleMoves = self.getPossibleMoves(self.board)
+		
+		bestScore = float('-inf') * player
+		bestDepth = float('-inf')
+		
+		for m in possibleMoves:
+			self.board[m[0]][m[1]] = player
+			possibleMoves[m] = self.minimax(self.board.copy(), 2, player)
+			self.board[m[0]][m[1]] = 0
+			if player == 1:
+				bestScore = max(bestScore, possibleMoves[m][0])
+			else:
+				bestScore = min(bestScore, possibleMoves[m][0])
+		
+		bestPossibleMoves = {}
+		
+		for m, s in possibleMoves.items():
+			if s[0] == bestScore:
+				bestPossibleMoves[m] = s
+				print(s)
+				bestDepth = max(bestDepth, s[1])
+				print(bestDepth)
+				
+		bestBestPossibleMoves = {}
+		
+		for m, s in bestPossibleMoves.items():
+			if s[1] == bestDepth:
+				bestBestPossibleMoves[m] = s
+		
+		print("Best Score: %s" % bestScore)
+		print("Best Depth: %s" % bestDepth)
+		print("Moves to pick from: %s " % list(bestBestPossibleMoves.keys()))
+		move, _ = random.choice(list(bestBestPossibleMoves.items()))
+		print("Player %s chose %s" % (player, str(move)))
+		
+		return move
+
+	def evaluateGame(self, board):
 		bestPathP1 = []
 		bestScoreP1 = float('inf')
 		for i in range(0, GRID_WIDTH):
@@ -57,7 +123,7 @@ class Game():
 				else:
 					score = len(p)
 				for k in p:
-					if self.board[k[0]][k[1]] == 1:
+					if board[k[0]][k[1]] == 1:
 						score -= 1
 				if score < bestScoreP1:
 					bestScoreP1 = score
@@ -73,7 +139,7 @@ class Game():
 				else:
 					score = len(p)
 				for k in p:
-					if self.board[k[0]][k[1]] == -1:
+					if board[k[0]][k[1]] == -1:
 						score -= 1
 				if score < bestScoreP2:
 					bestScoreP2 = score
@@ -157,26 +223,37 @@ class Game():
 						self.currentHexagon[1] = min(self.currentHexagon[1] + 1, GRID_HEIGHT - 1)
 					elif event.key == pygame.K_UP:
 						self.currentHexagon[1] = max(self.currentHexagon[1] - 1, 0)
+					elif event.key == pygame.K_m:
+						minimax = self.minimax2(self.board, 1, self.currentPlayer)
+						print("Best Score: %s, Best Depth: %s" % (minimax[0], minimax[1]))
 					elif event.key == pygame.K_RETURN:
-						if self.board[self.currentHexagon[0]][self.currentHexagon[1]] == 0 or (self.currentPlayer == -1 and self.isFirstTurn):
-							self.board[self.currentHexagon[0]][self.currentHexagon[1]] = self.currentPlayer
-							
-							eval, self.bestPaths[0], self.bestPaths[1] = self.evaluateGame()
-							
-							print("Evaluation: " + str(eval) + ", ", end="")
-							if eval == float('inf'):
+						if not self.isGameWon:
+							if self.manualMode:
+								if self.board[self.currentHexagon[0]][self.currentHexagon[1]] == 0 or (self.currentPlayer == -1 and self.isFirstTurn):
+									self.board[self.currentHexagon[0]][self.currentHexagon[1]] = self.currentPlayer
+									
+							else:
+								move = self.pickMove(self.currentPlayer)
+								self.board[move[0]][move[1]] = self.currentPlayer
+								# print("Best Score: %s" % self.minimax(self.board, 1, self.currentPlayer))
+								
+							score, self.bestPaths[0], self.bestPaths[1] = self.evaluateGame(self.board)
+									
+							print("Evaluation: " + str(score) + ", ", end="")
+							if score == float('inf'):
 								print("Blue has won!")
-							elif eval > 0:
+								self.isGameWon = True
+							elif score > 0:
 								print("Blue has the advantage")
-							elif eval == 0:
+							elif score == 0:
 								print("Game is even")
-							elif eval == float('inf'):
+							elif score == float('-inf'):
 								print("Red has won!")
+								self.isGameWon = True
 							else:
 								print("Red has the advantage")
 								
 							self.currentPlayer = -self.currentPlayer
-						
 							if (self.currentPlayer == -1 and self.isFirstTurn):
 								self.isFirstTurn == False
 			
