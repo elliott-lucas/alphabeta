@@ -4,8 +4,8 @@ import time
 import pygame
 from pygame import gfxdraw
 
-GRID_WIDTH  = 6
-GRID_HEIGHT = 6
+GRID_WIDTH  = 4
+GRID_HEIGHT = 4
 
 SEARCH_DEPTH   = 4
 SEARCH_PRUNING = True
@@ -34,7 +34,7 @@ class Window():
 
 class Game():
 	def __init__(self):
-		self.board          = [[0 for i in range(GRID_HEIGHT)] for j in range(GRID_WIDTH)]
+		self.board          = [[0 for x in range(GRID_HEIGHT)] for y in range(GRID_WIDTH)]
 		self.playerColours  = {-1: (200, 0, 0), 0: (255, 255, 255), 1: (0, 0, 200)}
 		self.currentPlayer  = 1
 		self.isFirstTurn    = True
@@ -44,13 +44,13 @@ class Game():
 		
 	def getPossibleMoves(self, board, player):
 		possibleMoves = {}
-		for i in range(0, GRID_WIDTH):
-			for j in range(0, GRID_HEIGHT):
-				if board[i][j] == 1:
+		for x in range(0, GRID_WIDTH):
+			for y in range(0, GRID_HEIGHT):
+				if board[x][y] == 1:
 					if player == -1 and self.isFirstTurn:
-						possibleMoves[(i, j)] = 0
-				if board[i][j] == 0:
-					possibleMoves[(i, j)] = 0
+						possibleMoves[(x, y)] = 0
+				if board[x][y] == 0:
+					possibleMoves[(x, y)] = 0
 		return possibleMoves
 
 	def findPath(self, player):
@@ -59,17 +59,17 @@ class Game():
 		costSoFar = {}
 		
 		if player == 1:
-			for i in range(0, GRID_WIDTH):
-				if self.board[i][0] in [player, 0]:
-					frontier.append((0, (i, 0)))
-					cameFrom[(i, 0)] = "start"
-					costSoFar[(i, 0)] = 0
+			for x in range(0, GRID_WIDTH):
+				if self.board[x][0] in [player, 0]:
+					frontier.append((0, (x, 0)))
+					cameFrom[(x, 0)] = "start"
+					costSoFar[(x, 0)] = 0
 		else:
-			for i in range(0, GRID_HEIGHT):
-				if self.board[0][i] in [player, 0]:
-					frontier.append((0, (0, i)))
-					cameFrom[(0, i)] = "start"
-					costSoFar[(0, i)] = 0
+			for y in range(0, GRID_HEIGHT):
+				if self.board[0][y] in [player, 0]:
+					frontier.append((0, (0, y)))
+					cameFrom[(0, y)] = "start"
+					costSoFar[(0, y)] = 0
 			
 		while len(frontier) > 0:
 			current = frontier.pop(0)[1]
@@ -218,11 +218,9 @@ class Game():
 		gameStartTime = time.time()
 		gameTotalTime = 0
 		
-		if GRAPHICS_ENABLED:
-			self.drawGame(self.board)
-		
 		while self.isGameRunning:
 			if GRAPHICS_ENABLED:
+				self.drawGame()
 				for event in pygame.event.get():
 					if event.type == pygame.QUIT:
 						self.isGameRunning = False
@@ -266,19 +264,17 @@ class Game():
 				if self.isGameWon:
 					print("\nGAME OVER.")
 					print("Total Time Taken: %ss" % gameTotalTime)
-		
-			self.drawGame(self.board)
-			
-	def drawGame(self, board):
+					
+	def drawGame(self):
 		pygame.gfxdraw.aapolygon(self.gameWindow.grid_area, ((HEXAGON_WIDTH/2, 0), (HEXAGON_WIDTH * (GRID_WIDTH-0.5), 0), (HEXAGON_WIDTH * (GRID_WIDTH) + HEXAGON_WIDTH/2 * (GRID_HEIGHT - 2), HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5)), (HEXAGON_WIDTH/2 * (GRID_HEIGHT), HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5))), self.playerColours[1])
 		pygame.gfxdraw.filled_polygon(self.gameWindow.grid_area, ((HEXAGON_WIDTH/2, 0), (HEXAGON_WIDTH * (GRID_WIDTH-0.5), 0), (HEXAGON_WIDTH * (GRID_WIDTH) + HEXAGON_WIDTH/2 * (GRID_HEIGHT - 2), HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5)), (HEXAGON_WIDTH/2 * (GRID_HEIGHT), HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5))), self.playerColours[1])
 		pygame.gfxdraw.aapolygon(self.gameWindow.grid_area, ((0, 1.5 * HEXAGON_SIZE), (GRID_WIDTH * HEXAGON_WIDTH, 0.5 * HEXAGON_SIZE), (HEXAGON_WIDTH * (GRID_WIDTH) + HEXAGON_WIDTH/2 * (GRID_HEIGHT - 1), HEXAGON_SIZE * (1.5 * GRID_HEIGHT - 1)), (HEXAGON_WIDTH/2 * (GRID_HEIGHT - 1), HEXAGON_SIZE * (1.5 * GRID_HEIGHT))), self.playerColours[-1])
 		pygame.gfxdraw.filled_polygon(self.gameWindow.grid_area, ((0, 1.5 * HEXAGON_SIZE), (GRID_WIDTH * HEXAGON_WIDTH, 0.5 * HEXAGON_SIZE), (HEXAGON_WIDTH * (GRID_WIDTH) + HEXAGON_WIDTH/2 * (GRID_HEIGHT - 1), HEXAGON_SIZE * (1.5 * GRID_HEIGHT - 1)), (HEXAGON_WIDTH/2 * (GRID_HEIGHT - 1), HEXAGON_SIZE * (1.5 * GRID_HEIGHT))), self.playerColours[-1])
 		
-		for x in range(0, len(board)):
-			for y in range(0, len(board[x])):
-				pygame.gfxdraw.aapolygon(self.gameWindow.grid_area, [((x+0.5) * HEXAGON_SIZE * math.sqrt(3) + y * HEXAGON_SIZE * math.sqrt(3)/2 + HEXAGON_SIZE * math.cos(2 * math.pi * (i / 6 + 1/12)), (y+0.675) * HEXAGON_SIZE * 1.5 + HEXAGON_SIZE * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], self.playerColours[board[x][y]])
-				pygame.gfxdraw.filled_polygon(self.gameWindow.grid_area, [((x+0.5) * HEXAGON_SIZE * math.sqrt(3) + y * HEXAGON_SIZE * math.sqrt(3)/2 ++ HEXAGON_SIZE * math.cos(2 * math.pi * (i / 6 + 1/12)), (y+0.675) * HEXAGON_SIZE * 1.5 + HEXAGON_SIZE * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], self.playerColours[board[x][y]])
+		for x in range(0, len(self.board)):
+			for y in range(0, len(self.board[x])):
+				pygame.gfxdraw.aapolygon(self.gameWindow.grid_area, [((x+0.5) * HEXAGON_SIZE * math.sqrt(3) + y * HEXAGON_SIZE * math.sqrt(3)/2 + HEXAGON_SIZE * math.cos(2 * math.pi * (i / 6 + 1/12)), (y+0.675) * HEXAGON_SIZE * 1.5 + HEXAGON_SIZE * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], self.playerColours[self.board[x][y]])
+				pygame.gfxdraw.filled_polygon(self.gameWindow.grid_area, [((x+0.5) * HEXAGON_SIZE * math.sqrt(3) + y * HEXAGON_SIZE * math.sqrt(3)/2 ++ HEXAGON_SIZE * math.cos(2 * math.pi * (i / 6 + 1/12)), (y+0.675) * HEXAGON_SIZE * 1.5 + HEXAGON_SIZE * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], self.playerColours[self.board[x][y]])
 				pygame.gfxdraw.aapolygon(self.gameWindow.grid_area, [((x+0.5) * HEXAGON_SIZE * math.sqrt(3) + y * HEXAGON_SIZE * math.sqrt(3)/2 + HEXAGON_SIZE * math.cos(2 * math.pi * (i / 6 + 1/12)), (y+0.675) * HEXAGON_SIZE * 1.5 + HEXAGON_SIZE * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], (0,0,0))
 		
 		self.gameWindow.root.blit(self.gameWindow.grid_area, (PADDING_X, PADDING_Y))
@@ -286,4 +282,3 @@ class Game():
 		
 game = Game()
 game.runGame()
-
