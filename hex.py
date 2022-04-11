@@ -4,8 +4,13 @@ import time
 import pygame
 from pygame import gfxdraw
 
-GRID_WIDTH  = 4
-GRID_HEIGHT = 4
+GRID_WIDTH  = 6
+GRID_HEIGHT = 6
+
+SEARCH_DEPTH   = 4
+SEARCH_PRUNING = True
+
+GRAPHICS_ENABLED = True
 
 HEXAGON_SIZE   = 50
 HEXAGON_WIDTH  = HEXAGON_SIZE * math.sqrt(3)
@@ -19,17 +24,17 @@ SCREEN_HEIGHT = int(HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5) + PADDING_Y * 2)
 
 class Window():
 	def __init__(self):
-		pygame.init()
-		pygame.display.set_caption("Hex")
-		pygame.font.init()
-		
-		self.root      = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-		self.grid_area = pygame.Surface((int(math.sqrt(3)/2 * HEXAGON_SIZE * 2 * (GRID_WIDTH + math.floor(GRID_HEIGHT/2))), int(HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5))))
+		if GRAPHICS_ENABLED:
+			pygame.init()
+			pygame.display.set_caption("Hex")
+			pygame.font.init()
+			
+			self.root      = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+			self.grid_area = pygame.Surface((int(math.sqrt(3)/2 * HEXAGON_SIZE * 2 * (GRID_WIDTH + math.floor(GRID_HEIGHT/2))), int(HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5))))
 
 class Game():
 	def __init__(self):
-		self.board          = [[0 for i in range(GRID_WIDTH)] for j in range(GRID_HEIGHT)]
-		self.currentHexagon = [0,0]
+		self.board          = [[0 for i in range(GRID_HEIGHT)] for j in range(GRID_WIDTH)]
 		self.playerColours  = {-1: (200, 0, 0), 0: (255, 255, 255), 1: (0, 0, 200)}
 		self.currentPlayer  = 1
 		self.isFirstTurn    = True
@@ -176,7 +181,10 @@ class Game():
 		for m in possibleMoves:
 			t = self.board[m[0]][m[1]]
 			self.board[m[0]][m[1]] = player
-			possibleMoves[m] = self.alphaBeta(self.board, 3, -player, float('-inf'), float('inf'))
+			if SEARCH_PRUNING:
+				possibleMoves[m] = self.alphaBeta(self.board, SEARCH_DEPTH-1, -player, float('-inf'), float('inf'))
+			else:
+				possibleMoves[m] = self.miniMax(self.board, SEARCH_DEPTH-1, -player)
 			self.board[m[0]][m[1]] = t
 			
 			if player == 1:
@@ -209,55 +217,57 @@ class Game():
 		self.isGameRunning = True
 		gameStartTime = time.time()
 		gameTotalTime = 0
-		self.drawGame(self.board)
+		
+		if GRAPHICS_ENABLED:
+			self.drawGame(self.board)
 		
 		while self.isGameRunning:
-			for event in pygame.event.get():
-				if event.type == pygame.QUIT:
-					self.isGameRunning = False
-					pygame.quit()
-					exit()
-				elif event.type == pygame.KEYDOWN:
-					if event.key == pygame.K_ESCAPE:
+			if GRAPHICS_ENABLED:
+				for event in pygame.event.get():
+					if event.type == pygame.QUIT:
 						self.isGameRunning = False
 						pygame.quit()
 						exit()
-				else:
-					if not self.isGameWon:
-						moveStartTime = time.time()
-						
-						print("\nPLAYER %s'S TURN.\n" % self.currentPlayer)
-												
-						move = self.pickMove(self.currentPlayer)
-						self.board[move[0]][move[1]] = self.currentPlayer
-							
-						score, _ = self.evaluateGame(self.board)
-												
-						print("Current Score: %s " % score)
-						print("Advantage: ", end="") 
-						if score == float('inf') * self.currentPlayer:
-							print("Player %i wins!" % self.currentPlayer)
-							self.isGameWon = True
-						elif score == 0:
-							print("None")
-						else:
-							print("Player %i" % int(score / abs(score)))
-								
-						if (self.currentPlayer == -1 and self.isFirstTurn):
-							self.isFirstTurn = False
-							
-						self.currentPlayer = -self.currentPlayer	
-						
-						moveEndTime = time.time()
-						gameTotalTime += (moveEndTime-moveStartTime)
-						
-						print("Time Taken: %ss" % str(moveEndTime-moveStartTime))
-						
-						if self.isGameWon:
-							print("\nGAME OVER.")
-							print("Total Time Taken: %ss" % gameTotalTime)
+					elif event.type == pygame.KEYDOWN:
+						if event.key == pygame.K_ESCAPE:
+							self.isGameRunning = False
+							pygame.quit()
+							exit()
+			if not self.isGameWon:
+				moveStartTime = time.time()
+				
+				print("\nPLAYER %s'S TURN.\n" % self.currentPlayer)
+										
+				move = self.pickMove(self.currentPlayer)
+				self.board[move[0]][move[1]] = self.currentPlayer
 					
-				self.drawGame(self.board)
+				score, _ = self.evaluateGame(self.board)
+										
+				print("Current Score: %s " % score)
+				print("Advantage: ", end="") 
+				if score == float('inf') * self.currentPlayer:
+					print("Player %i wins!" % self.currentPlayer)
+					self.isGameWon = True
+				elif score == 0:
+					print("None")
+				else:
+					print("Player %i" % int(score / abs(score)))
+						
+				if (self.currentPlayer == -1 and self.isFirstTurn):
+					self.isFirstTurn = False
+					
+				self.currentPlayer = -self.currentPlayer	
+				
+				moveEndTime = time.time()
+				gameTotalTime += (moveEndTime-moveStartTime)
+				
+				print("Time Taken: %ss" % str(moveEndTime-moveStartTime))
+				
+				if self.isGameWon:
+					print("\nGAME OVER.")
+					print("Total Time Taken: %ss" % gameTotalTime)
+		
+			self.drawGame(self.board)
 			
 	def drawGame(self, board):
 		pygame.gfxdraw.aapolygon(self.gameWindow.grid_area, ((HEXAGON_WIDTH/2, 0), (HEXAGON_WIDTH * (GRID_WIDTH-0.5), 0), (HEXAGON_WIDTH * (GRID_WIDTH) + HEXAGON_WIDTH/2 * (GRID_HEIGHT - 2), HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5)), (HEXAGON_WIDTH/2 * (GRID_HEIGHT), HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5))), self.playerColours[1])
