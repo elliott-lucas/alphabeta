@@ -18,7 +18,7 @@ HEXAGON_WIDTH = HEXAGON_SIZE * math.sqrt(3)
 PADDING_X = HEXAGON_SIZE
 PADDING_Y = HEXAGON_SIZE
 
-SCREEN_WIDTH  = int(math.sqrt(3)/2 * HEXAGON_SIZE * 2 * (GRID_WIDTH + math.floor(GRID_HEIGHT/2)) + PADDING_X * 2)
+SCREEN_WIDTH  = int(HEXAGON_WIDTH * (GRID_WIDTH + math.floor(GRID_HEIGHT/2) - 0.5) + PADDING_X * 2)
 SCREEN_HEIGHT = int(HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5) + PADDING_Y * 2)
 
 class Window():
@@ -29,7 +29,7 @@ class Window():
 			pygame.font.init()
 			
 			self.root      = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-			self.grid_area = pygame.Surface((int(math.sqrt(3)/2 * HEXAGON_SIZE * 2 * (GRID_WIDTH + math.floor(GRID_HEIGHT/2))), int(HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5))))
+			self.grid_area = pygame.Surface((int(HEXAGON_WIDTH * (GRID_WIDTH + math.floor(GRID_HEIGHT/2) - 0.5)), int(HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5))))
 
 class Game():
 	def __init__(self):
@@ -123,20 +123,22 @@ class Game():
 			return self.evaluateGame()
 		else:
 			if player == 1:
+				result = float('-inf')
 				for m in possibleMoves:
 					t = self.board[m[0]][m[1]]
 					self.board[m[0]][m[1]] = player
-					result = self.alphaBeta(-1, move+1, depth-1, alpha, beta)
+					result = max(result, self.alphaBeta(-1, move+1, depth-1, alpha, beta))
 					self.board[m[0]][m[1]] = t
 					if result >= beta or result == float('inf'):
 						break
 					alpha = max(alpha, result)
 				return result
 			else:
+				result = float('inf')
 				for m in possibleMoves:
 					t = self.board[m[0]][m[1]]
 					self.board[m[0]][m[1]] = player
-					result = self.alphaBeta(1, move+1, depth-1, alpha, beta)
+					result = min(result, self.alphaBeta(1, move+1, depth-1, alpha, beta))
 					self.board[m[0]][m[1]] = t
 					if result <= alpha or result == float('-inf'):
 						break
@@ -149,29 +151,25 @@ class Game():
 			return self.evaluateGame()
 		else:
 			if player == 1:
-				best = float('-inf')
+				result = float('-inf')
 				for m in possibleMoves:
 					t = self.board[m[0]][m[1]]
 					self.board[m[0]][m[1]] = player
-					result = self.miniMax(-1, move+1, depth-1)
+					result = max(result, self.miniMax(-player, move+1, depth-1))
 					self.board[m[0]][m[1]] = t
-					if result >= best:
-						best = result
-						if best == float('inf'):
-							break
-				return best
+					if result == float('inf'):
+						break
+				return result
 			else:
-				best = float('inf')
+				result = float('inf')
 				for m in possibleMoves:
 					t = self.board[m[0]][m[1]]
 					self.board[m[0]][m[1]] = player
-					result = self.miniMax(1, move+1, depth-1)
+					result = min(result, self.miniMax(-player, move+1, depth-1))
 					self.board[m[0]][m[1]] = t
-					if result <= best:
-						best = result
-						if best == float('-inf'):
-							break
-				return best
+					if result == float('-inf'):
+						break
+				return result
 					
 	def pickMove(self, player):
 		possibleMoves = self.getPossibleMoves(player, self.currentMove)
@@ -236,6 +234,9 @@ class Game():
 										
 				move = self.pickMove(self.currentPlayer)
 				self.board[move[0]][move[1]] = self.currentPlayer
+				
+				moveEndTime = time.time()
+				gameTotalTime += (moveEndTime-moveStartTime)
 					
 				score = self.evaluateGame()
 										
@@ -248,12 +249,6 @@ class Game():
 					print("None")
 				else:
 					print("Player %i" % int(score / abs(score)))
-						
-				self.currentPlayer = -self.currentPlayer	
-				self.currentMove += 1
-				
-				moveEndTime = time.time()
-				gameTotalTime += (moveEndTime-moveStartTime)
 				
 				print("Time Taken: %ss" % str(moveEndTime-moveStartTime))
 				
@@ -262,6 +257,10 @@ class Game():
 					print("Total Time Taken: %ss" % gameTotalTime)
 					if not GRAPHICS_ENABLED:
 						exit()
+				else:
+					self.currentPlayer = -self.currentPlayer
+					self.currentMove += 1
+					
 					
 	def drawGame(self):
 		pygame.gfxdraw.aapolygon(self.gameWindow.grid_area, ((HEXAGON_WIDTH/2, 0), (HEXAGON_WIDTH * (GRID_WIDTH-0.5), 0), (HEXAGON_WIDTH * (GRID_WIDTH) + HEXAGON_WIDTH/2 * (GRID_HEIGHT - 2), HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5)), (HEXAGON_WIDTH/2 * (GRID_HEIGHT), HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5))), self.playerColours[1])
