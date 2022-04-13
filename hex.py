@@ -75,19 +75,20 @@ class Game():
 				if self.board[x][0] in [player, 0]:
 					frontier.append((0, (x, 0)))
 					cameFrom[(x, 0)] = "start"
-					costSoFar[(x, 0)] = 0
+					costSoFar[(x, 0)] = (self.board[x][0] != player)
 		else:
 			for y in range(0, GRID_HEIGHT):
 				if self.board[0][y] in [player, 0]:
 					frontier.append((0, (0, y)))
 					cameFrom[(0, y)] = "start"
-					costSoFar[(0, y)] = 0
+					costSoFar[(0, y)] = (self.board[0][y] != player)
 			
 		while len(frontier) > 0:
 			current = frontier.pop(0)[1]
 			if (current[1] == GRID_HEIGHT-1 and player == 1) or (current[0] == GRID_WIDTH-1 and player == -1):
-				cameFrom["goal"] = current
-				break
+				if "goal" not in cameFrom or costSoFar[current] < costSoFar["goal"]:
+					costSoFar["goal"] = costSoFar[current]
+					cameFrom["goal"] = current
 			
 			neighbours = [(current[0], current[1]-1), (current[0]+1, current[1]-1), (current[0]-1, current[1]), (current[0]+1, current[1]), (current[0]-1, current[1]+1), (current[0], current[1]+1)]
 			valid = []
@@ -253,6 +254,7 @@ class Game():
 				print("Time Taken: %ss" % str(moveEndTime-moveStartTime))
 				
 				if self.isGameWon:
+					self.winningPath = self.findPath(self.currentPlayer)
 					print("\nPLAYER %s WINS!" % self.currentPlayer)
 					print("Total Time Taken: %ss" % gameTotalTime)
 					if not GRAPHICS_ENABLED:
@@ -273,6 +275,13 @@ class Game():
 				pygame.gfxdraw.aapolygon(self.gameWindow.grid_area, [((x+0.5) * HEXAGON_SIZE * math.sqrt(3) + y * HEXAGON_SIZE * math.sqrt(3)/2 + HEXAGON_SIZE * math.cos(2 * math.pi * (i / 6 + 1/12)), (y+0.675) * HEXAGON_SIZE * 1.5 + HEXAGON_SIZE * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], self.playerColours[self.board[x][y]])
 				pygame.gfxdraw.filled_polygon(self.gameWindow.grid_area, [((x+0.5) * HEXAGON_SIZE * math.sqrt(3) + y * HEXAGON_SIZE * math.sqrt(3)/2 ++ HEXAGON_SIZE * math.cos(2 * math.pi * (i / 6 + 1/12)), (y+0.675) * HEXAGON_SIZE * 1.5 + HEXAGON_SIZE * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], self.playerColours[self.board[x][y]])
 				pygame.gfxdraw.aapolygon(self.gameWindow.grid_area, [((x+0.5) * HEXAGON_SIZE * math.sqrt(3) + y * HEXAGON_SIZE * math.sqrt(3)/2 + HEXAGON_SIZE * math.cos(2 * math.pi * (i / 6 + 1/12)), (y+0.675) * HEXAGON_SIZE * 1.5 + HEXAGON_SIZE * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], (0,0,0))
+		
+		if self.isGameWon:
+			points = [((p[0]+0.5) * HEXAGON_WIDTH + p[1] * 0.5 * HEXAGON_WIDTH, 0.5*HEXAGON_SIZE*2 + 0.75*p[1]*HEXAGON_SIZE*2) for p in self.winningPath]
+			pygame.draw.lines(self.gameWindow.grid_area, 'yellow', False, points, 12)
+			for p in points:
+				pygame.draw.circle(self.gameWindow.grid_area, self.playerColours[self.currentPlayer], p, 16)
+				pygame.draw.circle(self.gameWindow.grid_area, 'yellow', p, 12)
 		
 		self.gameWindow.root.blit(self.gameWindow.grid_area, (PADDING_X, PADDING_Y))
 		pygame.display.flip()
