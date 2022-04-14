@@ -18,7 +18,7 @@ HEXAGON_WIDTH = HEXAGON_SIZE * math.sqrt(3)
 PADDING_X = HEXAGON_SIZE
 PADDING_Y = HEXAGON_SIZE
 
-SCREEN_WIDTH  = int(HEXAGON_WIDTH * (GRID_WIDTH + math.floor(GRID_HEIGHT/2) - 0.5) + PADDING_X * 2)
+SCREEN_WIDTH  = int(HEXAGON_WIDTH * (GRID_WIDTH + GRID_HEIGHT/2 - 0.5) + PADDING_X * 2)
 SCREEN_HEIGHT = int(HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5) + PADDING_Y * 2)
 
 class Window():
@@ -29,7 +29,7 @@ class Window():
 			pygame.font.init()
 			
 			self.root      = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-			self.grid_area = pygame.Surface((int(HEXAGON_WIDTH * (GRID_WIDTH + math.floor(GRID_HEIGHT/2) - 0.5)), int(HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5))))
+			self.grid_area = pygame.Surface((int(HEXAGON_WIDTH * (GRID_WIDTH + GRID_HEIGHT/2 - 0.5)), int(HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5))))
 
 class Game():
 	def __init__(self):
@@ -281,10 +281,10 @@ class Game():
 		
 		if self.isGameWon:
 			points = [((p[0]+0.5) * HEXAGON_WIDTH + p[1] * 0.5 * HEXAGON_WIDTH, 0.5*HEXAGON_SIZE*2 + 0.75*p[1]*HEXAGON_SIZE*2) for p in self.winningPath]
-			pygame.draw.lines(self.gameWindow.grid_area, 'yellow', False, points, 12)
+			pygame.draw.lines(self.gameWindow.grid_area, 'yellow', False, points, int(HEXAGON_SIZE/4))
 			for p in points:
-				pygame.draw.circle(self.gameWindow.grid_area, self.playerColours[self.currentPlayer], p, 16)
-				pygame.draw.circle(self.gameWindow.grid_area, 'yellow', p, 12)
+				pygame.draw.circle(self.gameWindow.grid_area, self.playerColours[self.currentPlayer], p, int(HEXAGON_SIZE/4 * 1.3))
+				pygame.draw.circle(self.gameWindow.grid_area, 'yellow', p, int(HEXAGON_SIZE/4))
 		
 		self.gameWindow.root.blit(self.gameWindow.grid_area, (PADDING_X, PADDING_Y))
 		pygame.display.flip()
