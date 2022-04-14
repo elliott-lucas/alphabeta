@@ -33,13 +33,14 @@ class Window():
 
 class Game():
 	def __init__(self):
-		self.board          = [[0 for x in range(GRID_HEIGHT)] for y in range(GRID_WIDTH)]
-		self.playerColours  = {-1: (200, 0, 0), 0: (255, 255, 255), 1: (0, 0, 200)}
-		self.currentPlayer  = 1
-		self.currentMove    = 0
-		self.isGameWon      = False
-		self.isGameRunning  = False
-		self.gameWindow     = Window()
+		self.board            = [[0 for x in range(GRID_HEIGHT)] for y in range(GRID_WIDTH)]
+		self.playerColours    = {-1: (200, 0, 0), 0: (255, 255, 255), 1: (0, 0, 200)}
+		self.currentPlayer    = 1
+		self.totalMoves       = 0
+		self.totalEvaluations = 0
+		self.isGameWon        = False
+		self.isGameRunning    = False
+		self.gameWindow       = Window()
 		
 	def getPossibleMoves(self, player, move):
 		possibleMoves = {}
@@ -63,6 +64,7 @@ class Game():
 			else:
 				scores[p] = float('inf')
 				
+		self.totalEvaluations += 1
 		return scores[-1] - scores[1]
 		
 	def findPath(self, player):
@@ -173,16 +175,16 @@ class Game():
 				return result
 					
 	def pickMove(self, player):
-		possibleMoves = self.getPossibleMoves(player, self.currentMove)
+		possibleMoves = self.getPossibleMoves(player, self.totalMoves)
 		bestScore = float('-inf') * player
 		
 		for m in possibleMoves:
 			t = self.board[m[0]][m[1]]
 			self.board[m[0]][m[1]] = player
 			if SEARCH_PRUNING:
-				possibleMoves[m] = self.alphaBeta(-player, self.currentMove+1, SEARCH_DEPTH-1, float('-inf'), float('inf'))
+				possibleMoves[m] = self.alphaBeta(-player, self.totalMoves+1, SEARCH_DEPTH-1, float('-inf'), float('inf'))
 			else:
-				possibleMoves[m] = self.miniMax(-player, self.currentMove+1, SEARCH_DEPTH-1)
+				possibleMoves[m] = self.miniMax(-player, self.totalMoves+1, SEARCH_DEPTH-1)
 			self.board[m[0]][m[1]] = t
 			if player == 1:
 				bestScore = max(bestScore, possibleMoves[m])
@@ -235,12 +237,13 @@ class Game():
 										
 				move = self.pickMove(self.currentPlayer)
 				self.board[move[0]][move[1]] = self.currentPlayer
+				self.totalMoves += 1
 				
 				moveEndTime = time.time()
 				gameTotalTime += (moveEndTime-moveStartTime)
 					
 				score = self.evaluateGame()
-										
+				
 				print("Current Score: %s " % score)
 				print("Advantage: ", end="") 
 				if score == float('inf') * self.currentPlayer:
@@ -256,13 +259,13 @@ class Game():
 				if self.isGameWon:
 					self.winningPath = self.findPath(self.currentPlayer)
 					print("\nPLAYER %s WINS!" % self.currentPlayer)
+					print("Total Moves: %s" % self.totalMoves)
+					print("Total Evaluations: %s" % self.totalEvaluations)
 					print("Total Time Taken: %ss" % gameTotalTime)
 					if not GRAPHICS_ENABLED:
 						exit()
 				else:
 					self.currentPlayer = -self.currentPlayer
-					self.currentMove += 1
-					
 					
 	def drawGame(self):
 		pygame.gfxdraw.aapolygon(self.gameWindow.grid_area, ((HEXAGON_WIDTH/2, 0), (HEXAGON_WIDTH * (GRID_WIDTH-0.5), 0), (HEXAGON_WIDTH * (GRID_WIDTH) + HEXAGON_WIDTH/2 * (GRID_HEIGHT - 2), HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5)), (HEXAGON_WIDTH/2 * (GRID_HEIGHT), HEXAGON_SIZE * (1.5 * GRID_HEIGHT + 0.5))), self.playerColours[1])
