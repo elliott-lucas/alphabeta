@@ -33,7 +33,7 @@ class Window():
 
 class Game():
 	def __init__(self):
-		self.board            = [[0 for x in range(GRID_HEIGHT)] for y in range(GRID_WIDTH)]
+		self.board            = [[0 for y in range(GRID_HEIGHT)] for x in range(GRID_WIDTH)]
 		self.playerColours    = {-1: (200, 0, 0), 0: (255, 255, 255), 1: (0, 0, 200)}
 		self.currentPlayer    = 1
 		self.totalMoves       = 0
@@ -55,70 +55,66 @@ class Game():
 		
 	def evaluateGame(self):
 		paths = {-1: [], 1: []}
-		scores = {-1: float('inf'), 1: float('inf')}
+		scores = {-1: 0, 1: 0}
 		
 		for p in (1, -1):
-			paths[p] = self.findPath(p)
-			if len(paths[p]) > 0:
-				scores[p] = len(paths[p]) - paths[p].count(p)
-			else:
+			paths[p] = self.findPaths(p, 3)
+			if len(paths[p]) == 0:
 				scores[p] = float('inf')
+			else:
+				for i in paths[p]:
+					scores[p] += len(i) - i.count(p)
 				
 		self.totalEvaluations += 1
 		return scores[-1] - scores[1]
 		
-	def findPath(self, player):
-		frontier = []
-		cameFrom = {}
-		costSoFar = {}
+	def findPaths(self, player, k):
+		goalPaths = []
+		pathList = []
+		pathCount = {}
+		
+		for x in range(0, GRID_WIDTH):
+			for y in range(0, GRID_HEIGHT):
+				pathCount[(x,y)] = 0
 		
 		if player == 1:
 			for x in range(0, GRID_WIDTH):
 				if self.board[x][0] in [player, 0]:
-					frontier.append((0, (x, 0)))
-					cameFrom[(x, 0)] = "start"
-					costSoFar[(x, 0)] = (self.board[x][0] != player)
+					pathList.append([(x, 0), (self.board[x][0] != player), [(x, 0)]])
 		else:
 			for y in range(0, GRID_HEIGHT):
 				if self.board[0][y] in [player, 0]:
-					frontier.append((0, (0, y)))
-					cameFrom[(0, y)] = "start"
-					costSoFar[(0, y)] = (self.board[0][y] != player)
+					pathList.append([(0, y), (self.board[0][y] != player), [(0, y)]])
+		
+		while len(pathList) > 0 and len(goalPaths) < k:
+			lowest = float('inf')
+			for p in range(len(pathList)):
+				if pathList[p][1] < lowest:
+					lowest = pathList[p][1]
+					index = p
+					
+			currentPath = pathList.pop(index)
+			u = currentPath[0]
 			
-		while len(frontier) > 0:
-			current = frontier.pop(0)[1]
-			if (current[1] == GRID_HEIGHT-1 and player == 1) or (current[0] == GRID_WIDTH-1 and player == -1):
-				if "goal" not in cameFrom or costSoFar[current] < costSoFar["goal"]:
-					costSoFar["goal"] = costSoFar[current]
-					cameFrom["goal"] = current
+			pathCount[u] += 1
 			
-			neighbours = [(current[0], current[1]-1), (current[0]+1, current[1]-1), (current[0]-1, current[1]), (current[0]+1, current[1]), (current[0]-1, current[1]+1), (current[0], current[1]+1)]
-			valid = []
+			if (u[1] == GRID_HEIGHT-1 and player == 1) or (u[0] == GRID_WIDTH-1 and player == -1):
+				goalPaths.append(currentPath[2])
 				
-			for n in neighbours:
-				if n[0] < GRID_WIDTH and n[1] < GRID_HEIGHT and n[0] >= 0 and n[1] >= 0:
-					if self.board[n[0]][n[1]] in [player, 0]:
-						valid.append(n)
+			if pathCount[u] <= k:
+				neighbours = [(u[0], u[1]-1), (u[0]+1, u[1]-1), (u[0]-1, u[1]), (u[0]+1, u[1]), (u[0]-1, u[1]+1), (u[0], u[1]+1)]
+				valid = []
 				
-			for n in valid:
-				cost = costSoFar[current] + (self.board[n[0]][n[1]] != player)
-				if n not in cameFrom or cost < costSoFar[n]:
-					costSoFar[n] = cost
-					priority = cost
-					frontier.append((priority, n))
-					cameFrom[n] = current
-			
-		if "goal" in cameFrom:
-			current = cameFrom["goal"]
-			path = []
-			while current != "start":
-				path.append(current)
-				current = cameFrom[current]
-			path.reverse()
-		else:
-			path = []
-			
-		return path
+				for n in neighbours:
+					if n[0] < GRID_WIDTH and n[1] < GRID_HEIGHT and n[0] >= 0 and n[1] >= 0:
+						if self.board[n[0]][n[1]] in [player, 0]:
+							valid.append(n)
+				
+				for v in valid:
+					p = [v, currentPath[1]+(self.board[v[0]][v[1]] != player), currentPath[2] + [v]]
+					pathList.append(p)
+		
+		return goalPaths
 				
 	def alphaBeta(self, player, move, depth, alpha, beta):
 		possibleMoves = self.getPossibleMoves(player, move)
@@ -230,6 +226,7 @@ class Game():
 							self.isGameRunning = False
 							pygame.quit()
 							exit()
+							
 			if not self.isGameWon:
 				moveStartTime = time.time()
 				
@@ -257,8 +254,8 @@ class Game():
 				print("Time Taken: %ss" % str(moveEndTime-moveStartTime))
 				
 				if self.isGameWon:
-					self.winningPath = self.findPath(self.currentPlayer)
-					print("\nPLAYER %s WINS!" % self.currentPlayer)
+					self.winningPath = self.findPaths(self.currentPlayer, 1)[0]
+					print("\nPLAYER %s WINS!\n" % self.currentPlayer)
 					print("Total Moves: %s" % self.totalMoves)
 					print("Total Evaluations: %s" % self.totalEvaluations)
 					print("Total Time Taken: %ss" % gameTotalTime)
@@ -281,10 +278,10 @@ class Game():
 		
 		if self.isGameWon:
 			points = [((p[0]+0.5) * HEXAGON_WIDTH + p[1] * 0.5 * HEXAGON_WIDTH, 0.5*HEXAGON_SIZE*2 + 0.75*p[1]*HEXAGON_SIZE*2) for p in self.winningPath]
-			pygame.draw.lines(self.gameWindow.grid_area, 'yellow', False, points, int(HEXAGON_SIZE/4))
+			pygame.draw.lines(self.gameWindow.grid_area, 'green', False, points, int(HEXAGON_SIZE/4))
 			for p in points:
 				pygame.draw.circle(self.gameWindow.grid_area, self.playerColours[self.currentPlayer], p, int(HEXAGON_SIZE/4 * 1.3))
-				pygame.draw.circle(self.gameWindow.grid_area, 'yellow', p, int(HEXAGON_SIZE/4))
+				pygame.draw.circle(self.gameWindow.grid_area, 'green', p, int(HEXAGON_SIZE/4))
 		
 		self.gameWindow.root.blit(self.gameWindow.grid_area, (PADDING_X, PADDING_Y))
 		pygame.display.flip()
