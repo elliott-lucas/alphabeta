@@ -1,7 +1,5 @@
 from alphabeta import AlphaBeta
-from hex import Hex
-from tictactoe import TicTacToe
-from twentyone import TwentyOne
+from games import *
 
 ab = AlphaBeta()
 ab.playGame(Hex(), 4)
