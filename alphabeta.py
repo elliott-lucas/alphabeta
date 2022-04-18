@@ -33,8 +33,33 @@ class AlphaBeta():
 						break
 					beta = min(beta, result)
 				return result
+				
+	def miniMax(self, game, depth):
+		possibleMoves = game.getPossibleMoves()
+		if depth == 0 or len(possibleMoves) == 0:
+			self.totalEvaluations += 1
+			return game.getEvaluation()
+		else:
+			if game.currentPlayer == 1:
+				result = float('-inf')
+				for m in possibleMoves:
+					g = pickle.loads(pickle.dumps(game, -1))
+					g.playMove(m)
+					result = max(result, self.miniMax(g, depth-1))
+					if result == float('inf'):
+						break
+				return result
+			else:
+				result = float('inf')
+				for m in possibleMoves:
+					g = pickle.loads(pickle.dumps(game, -1))
+					g.playMove(m)
+					result = min(result, self.miniMax(g, depth-1))
+					if result == float('-inf'):
+						break
+				return result
 		
-	def chooseMove(self, game, depth):
+	def chooseMove(self, game, depth, prune):
 		possibleMoves = game.getPossibleMoves()
 		
 		if len(possibleMoves) == 0:
@@ -45,7 +70,10 @@ class AlphaBeta():
 		for m in possibleMoves:
 			g = pickle.loads(pickle.dumps(game, -1))
 			g.playMove(m)
-			possibleMoves[m] = self.alphaBeta(g, depth-1, float('-inf'), float('inf'))
+			if prune:
+				possibleMoves[m] = self.alphaBeta(g, depth-1, float('-inf'), float('inf'))
+			else:
+				possibleMoves[m] = self.miniMax(g, depth-1)
 			if game.currentPlayer == 1:
 				bestScore = max(bestScore, possibleMoves[m])
 			else:
@@ -70,13 +98,13 @@ class AlphaBeta():
 		
 		return move
 		
-	def playGame(self, game, depth):
+	def playGame(self, game, depth, prune=True):
 		while not game.isGameOver:
 			startTime = time.time()
 				
 			print("\nPLAYER %s'S TURN.\n" % game.currentPlayer)
 			
-			move = self.chooseMove(game, depth)
+			move = self.chooseMove(game, depth, prune)
 			
 			if move != None:
 				game.playMove(move)
