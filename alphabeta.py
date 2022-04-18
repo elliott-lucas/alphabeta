@@ -1,11 +1,6 @@
 import time
 import random
-import copy
 import pickle
-
-from twentyone import TwentyOne
-from tictactoe import TicTacToe
-from hex import Hex
 
 class AlphaBeta():
 	def __init__(self):
@@ -102,6 +97,3 @@ class AlphaBeta():
 				print("Total Moves: %s" % game.totalMoves)
 				print("Total Evaluations: %s" % self.totalEvaluations)
 				print("Total Time Taken: %ss" % self.totalTime)
-				
-ab = AlphaBeta()
-ab.playGame(Hex(), 4)
