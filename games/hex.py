@@ -1,4 +1,4 @@
-from game import Game
+from games.game import Game
 
 GRID_WIDTH  = 4
 GRID_HEIGHT = 4
