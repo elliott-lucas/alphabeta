@@ -1,4 +1,4 @@
-from games.game import Game
+from games import Game
 
 class TicTacToe(Game):
 	def __init__(self):
