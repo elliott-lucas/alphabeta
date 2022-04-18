@@ -1,13 +1,13 @@
 import time
 import random
 import copy
+import pickle
 
+from twentyone import TwentyOne
 from tictactoe import TicTacToe
 from hex import Hex
 
-SEARCH_DEPTH = 4
-
-class GamePlayer():
+class AlphaBeta():
 	def __init__(self):
 		self.totalTime        = 0
 		self.totalEvaluations = 0
@@ -21,7 +21,7 @@ class GamePlayer():
 			if game.currentPlayer == 1:
 				result = float('-inf')
 				for m in possibleMoves:
-					g = copy.deepcopy(game)
+					g = pickle.loads(pickle.dumps(game, -1))
 					g.playMove(m)
 					result = max(result, self.alphaBeta(g, depth-1, alpha, beta))
 					if result >= beta or result == float('inf'):
@@ -31,7 +31,7 @@ class GamePlayer():
 			else:
 				result = float('inf')
 				for m in possibleMoves:
-					g = copy.deepcopy(game)
+					g = pickle.loads(pickle.dumps(game, -1))
 					g.playMove(m)
 					result = min(result, self.alphaBeta(g, depth-1, alpha, beta))
 					if result <= alpha or result == float('-inf'):
@@ -39,7 +39,7 @@ class GamePlayer():
 					beta = min(beta, result)
 				return result
 		
-	def chooseMove(self, game):
+	def chooseMove(self, game, depth):
 		possibleMoves = game.getPossibleMoves()
 		
 		if len(possibleMoves) == 0:
@@ -48,9 +48,9 @@ class GamePlayer():
 			bestScore = float('-inf') * game.currentPlayer
 		
 		for m in possibleMoves:
-			g = copy.deepcopy(game)
+			g = pickle.loads(pickle.dumps(game, -1))
 			g.playMove(m)
-			possibleMoves[m] = self.alphaBeta(g, SEARCH_DEPTH-1, float('-inf'), float('inf'))
+			possibleMoves[m] = self.alphaBeta(g, depth-1, float('-inf'), float('inf'))
 			if game.currentPlayer == 1:
 				bestScore = max(bestScore, possibleMoves[m])
 			else:
@@ -75,13 +75,13 @@ class GamePlayer():
 		
 		return move
 		
-	def playGame(self, game):
+	def playGame(self, game, depth):
 		while not game.isGameOver:
 			startTime = time.time()
 				
 			print("\nPLAYER %s'S TURN.\n" % game.currentPlayer)
 			
-			move = self.chooseMove(game)
+			move = self.chooseMove(game, depth)
 			
 			if move != None:
 				game.playMove(move)
@@ -103,5 +103,5 @@ class GamePlayer():
 				print("Total Evaluations: %s" % self.totalEvaluations)
 				print("Total Time Taken: %ss" % self.totalTime)
 				
-gamePlayer = GamePlayer()
-gamePlayer.playGame(Hex())
+ab = AlphaBeta()
+ab.playGame(Hex(), 4)
