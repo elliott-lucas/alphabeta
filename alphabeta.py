@@ -1,10 +1,9 @@
 import time
 import random
-import pickle
+import pygame
 
 class AlphaBeta():
 	def __init__(self):
-		self.totalTime        = 0
 		self.totalEvaluations = 0
 		
 	def alphaBeta(self, game, depth, alpha, beta):
@@ -16,9 +15,9 @@ class AlphaBeta():
 			if game.currentPlayer == 1:
 				result = float('-inf')
 				for m in possibleMoves:
-					g = pickle.loads(pickle.dumps(game, -1))
-					g.playMove(m)
-					result = max(result, self.alphaBeta(g, depth-1, alpha, beta))
+					t = game.playMove(m)
+					result = max(result, self.alphaBeta(game, depth-1, alpha, beta))
+					game.undoMove(t)
 					if result >= beta or result == float('inf'):
 						break
 					alpha = max(alpha, result)
@@ -26,9 +25,9 @@ class AlphaBeta():
 			else:
 				result = float('inf')
 				for m in possibleMoves:
-					g = pickle.loads(pickle.dumps(game, -1))
-					g.playMove(m)
-					result = min(result, self.alphaBeta(g, depth-1, alpha, beta))
+					t = game.playMove(m)
+					result = min(result, self.alphaBeta(game, depth-1, alpha, beta))
+					game.undoMove(t)
 					if result <= alpha or result == float('-inf'):
 						break
 					beta = min(beta, result)
@@ -43,85 +42,79 @@ class AlphaBeta():
 			if game.currentPlayer == 1:
 				result = float('-inf')
 				for m in possibleMoves:
-					g = pickle.loads(pickle.dumps(game, -1))
-					g.playMove(m)
-					result = max(result, self.miniMax(g, depth-1))
+					t = game.playMove(m)
+					result = max(result, self.miniMax(game, depth-1))
+					game.undoMove(t)
 					if result == float('inf'):
 						break
 				return result
 			else:
 				result = float('inf')
 				for m in possibleMoves:
-					g = pickle.loads(pickle.dumps(game, -1))
-					g.playMove(m)
-					result = min(result, self.miniMax(g, depth-1))
+					t = game.playMove(m)
+					result = min(result, self.miniMax(game, depth-1))
+					game.undoMove(t)
 					if result == float('-inf'):
 						break
 				return result
 		
 	def chooseMove(self, game, depth, prune):
 		possibleMoves = game.getPossibleMoves()
+		bestScore = float('-inf') * game.currentPlayer
 		
 		if len(possibleMoves) == 0:
 			return None
-		else:
-			bestScore = float('-inf') * game.currentPlayer
 		
 		for m in possibleMoves:
-			g = pickle.loads(pickle.dumps(game, -1))
-			g.playMove(m)
+			t = game.playMove(m)
 			if prune:
-				possibleMoves[m] = self.alphaBeta(g, depth-1, float('-inf'), float('inf'))
+				possibleMoves[m] = self.alphaBeta(game, depth-1, float('-inf'), float('inf'))
 			else:
-				possibleMoves[m] = self.miniMax(g, depth-1)
+				possibleMoves[m] = self.miniMax(game, depth-1)
+			game.undoMove(t)
 			if game.currentPlayer == 1:
 				bestScore = max(bestScore, possibleMoves[m])
 			else:
 				bestScore = min(bestScore, possibleMoves[m])
-			
-		bestPossibleMoves = {}
-		for m, s in possibleMoves.items():
-			if s == bestScore:
-				bestPossibleMoves[m] = s
 		
-		print("Best Score: %s " % bestScore, end="")
-		if bestScore == float('-inf') * game.currentPlayer:
-			print("[Impossible to Win]")
-		elif bestScore == float('inf') * game.currentPlayer:
-			print("[Guaranteed to Win]")
-		else:
-			print("")
-		
-		print("Best Moves: %s " % list(bestPossibleMoves.keys()))
-		move, _ = random.choice(list(bestPossibleMoves.items()))
-		print("Move Chosen: %s" % str(move))
+		move, _ = random.choice(list(filter(lambda x: x[1] == bestScore, possibleMoves.items())))
 		
 		return move
-		
+
 	def playGame(self, game, depth, prune=True):
-		while not game.isGameOver:
-			startTime = time.time()
+		self.totalEvaluations = 0
+		startTime = time.time()
+		game.drawGame()
+		
+		while game.isGameRunning:
+			if not game.isGameOver:
+				print("\nPLAYER %s'S TURN.\n" % game.currentPlayer)
 				
-			print("\nPLAYER %s'S TURN.\n" % game.currentPlayer)
-			
-			move = self.chooseMove(game, depth, prune)
-			
-			if move != None:
-				game.playMove(move)
-			else:
-				game.isGameOver = True
-				game.winningPlayer = 0
-			
-			endTime = time.time()
-			self.totalTime += (endTime-startTime)
-			
-			print("Time Taken: %ss" % str(endTime-startTime))
-			
-			if game.isGameOver:
-				if game.winningPlayer == 0:
-					print("\nIT'S A DRAW!\n")
+				if (game.human and game.currentPlayer == 1):
+					move = game.getInput()
+					game.playMove(move)
+					print("You chose %s" % str(move))
+					
 				else:
-					print("\nPLAYER %s WINS!\n" % game.winningPlayer)
-				print("Total Moves: %s" % game.totalMoves)
-				print("Total Evaluations: %s" % self.totalEvaluations)
-				print("Total Time Taken: %ss" % self.totalTime)
+					print("Thinking...")
+					move = self.chooseMove(game, depth, prune)
+					
+					if move == None:
+						game.isGameOver = True
+						game.winningPlayer = 0
+					else:
+						game.playMove(move)
+						print("Player %s chooses %s" % (game.currentPlayer, move))
+				
+				game.drawGame()
+				if game.isGameOver:
+					if game.winningPlayer == 0:
+						print("\nIT'S A DRAW!\n")
+					else:
+						print("\nPLAYER %s WINS!\n" % game.winningPlayer)
+					print("Total Moves: %s" % game.totalMoves)
+					print("Total Evaluations: %s" % self.totalEvaluations)
+					if not game.graphics:
+						game.isGameRunning = False
+					
+					endTime = time.time()

@@ -1,8 +1,8 @@
 from games import Game
 
 class TwentyOne(Game):
-	def __init__(self):
-		super().__init__()
+	def __init__(self, graphics=True, human=True):
+		super().__init__(graphics, human)
 		self.nums = []
 	
 	def getPossibleMoves(self):
@@ -18,6 +18,7 @@ class TwentyOne(Game):
 			return 0
 	
 	def playMove(self, move):
+		t = {"nums": [row[:] for row in self.nums]}
 		self.nums.append([self.currentPlayer, move])
 		self.totalMoves += 1
 		
@@ -26,3 +27,5 @@ class TwentyOne(Game):
 			self.winningPlayer = self.currentPlayer
 		else:
 			self.currentPlayer = -self.currentPlayer
+			
+		return t
