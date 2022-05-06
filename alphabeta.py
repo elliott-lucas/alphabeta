@@ -17,7 +17,7 @@ class AlphaBeta():
 				for m in possibleMoves:
 					t = game.playMove(m)
 					result = max(result, self.alphaBeta(game, depth-1, alpha, beta))
-					game.undoMove(t)
+					game.revertGame(t)
 					if result >= beta or result == float('inf'):
 						break
 					alpha = max(alpha, result)
@@ -27,7 +27,7 @@ class AlphaBeta():
 				for m in possibleMoves:
 					t = game.playMove(m)
 					result = min(result, self.alphaBeta(game, depth-1, alpha, beta))
-					game.undoMove(t)
+					game.revertGame(t)
 					if result <= alpha or result == float('-inf'):
 						break
 					beta = min(beta, result)
@@ -44,7 +44,7 @@ class AlphaBeta():
 				for m in possibleMoves:
 					t = game.playMove(m)
 					result = max(result, self.miniMax(game, depth-1))
-					game.undoMove(t)
+					game.revertGame(t)
 					if result == float('inf'):
 						break
 				return result
@@ -53,7 +53,7 @@ class AlphaBeta():
 				for m in possibleMoves:
 					t = game.playMove(m)
 					result = min(result, self.miniMax(game, depth-1))
-					game.undoMove(t)
+					game.revertGame(t)
 					if result == float('-inf'):
 						break
 				return result
@@ -71,7 +71,7 @@ class AlphaBeta():
 				possibleMoves[m] = self.alphaBeta(game, depth-1, float('-inf'), float('inf'))
 			else:
 				possibleMoves[m] = self.miniMax(game, depth-1)
-			game.undoMove(t)
+			game.revertGame(t)
 			if game.currentPlayer == 1:
 				bestScore = max(bestScore, possibleMoves[m])
 			else:
@@ -103,8 +103,8 @@ class AlphaBeta():
 						game.isGameOver = True
 						game.winningPlayer = 0
 					else:
-						game.playMove(move)
 						print("Player %s chooses %s" % (game.currentPlayer, move))
+						game.playMove(move)
 				
 				game.drawGame()
 				if game.isGameOver:

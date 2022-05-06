@@ -1,7 +1,7 @@
 from games import Game
 
 class TwentyOne(Game):
-	def __init__(self, graphics=True, human=True):
+	def __init__(self, graphics, human):
 		super().__init__(graphics, human)
 		self.nums = []
 	
@@ -16,16 +16,25 @@ class TwentyOne(Game):
 			return self.nums[-1][0] * float('inf')
 		else:
 			return 0
+			
+	def getInput(self):
+		while True:
+			num = input("Pick a number [1, 2 or 3]: ")
+			if num.isdigit():
+				if int(num) >= 1 and int(num) <= 3:
+					return int(num)
+				else:
+					print("Number must be between 1 and 3.")
+			else:
+				print("Not a number.")
 	
 	def playMove(self, move):
 		t = {"nums": [row[:] for row in self.nums]}
 		self.nums.append([self.currentPlayer, move])
-		self.totalMoves += 1
 		
-		if self.getEvaluation() == float('inf') * self.currentPlayer:
-			self.isGameOver = True
-			self.winningPlayer = self.currentPlayer
-		else:
-			self.currentPlayer = -self.currentPlayer
+		self.updateGame()
 			
 		return t
+		
+	def drawGame(self):
+		print("The current sum is %s" % sum([n[1] for n in self.nums]))

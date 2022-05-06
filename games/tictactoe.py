@@ -47,12 +47,8 @@ class TicTacToe(Game):
 	def playMove(self, move):
 		t = {"board": [row[:] for row in self.board]}
 		self.board[move[0]][move[1]] = self.currentPlayer
-		self.totalMoves += 1
 		
-		if self.getEvaluation() == float('inf') * self.currentPlayer:
-			self.isGameOver = True
-			self.winningPlayer = self.currentPlayer
-		self.currentPlayer = -self.currentPlayer
+		self.updateGame()
 			
 		return t
 		

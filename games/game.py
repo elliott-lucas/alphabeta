@@ -16,20 +16,28 @@ class Game(object):
 	def getEvaluation(self):
 		raise NotImplementedError('Subclasses must override Game()!')
 		
+	def getInput(self):
+		raise NotImplementedError('This game does not support human players!')
+		
 	def playMove(self):
 		raise NotImplementedError('Subclasses must override Game()!')
-		
-	def undoMove(self, t):
-		self.__dict__.update(t)
+	
+	def updateGame(self):
+		self.totalMoves += 1
+		if self.getEvaluation() == float('inf') * self.currentPlayer:
+			self.isGameOver = True
+			self.winningPlayer = self.currentPlayer
 		self.currentPlayer = -self.currentPlayer
+	
+	def revertGame(self, t):
+		self.__dict__.update(t)
 		self.totalMoves -= 1
+		self.currentPlayer = -self.currentPlayer
 		self.isGameOver = False
+		self.winningPlayer = None
 		
 	def drawGame(self):
 		raise NotImplementedError('This game does not support graphics!')
-		
-	def getInput(self):
-		raise NotImplementedError('This game does not support human players!')
 	
 class Window():
 	def __init__(self, width, height, title):
