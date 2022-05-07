@@ -43,6 +43,35 @@ class TicTacToe(Game):
 				scores[p] = float('inf')
 				
 		return scores[1] - scores[-1]
+		
+	def getInput(self):
+		if self.graphics:
+			while True:
+				self.drawGame()
+				for event in pygame.event.get():
+					if event.type == pygame.KEYDOWN:
+						if event.key == pygame.K_UP:
+							self.currentSquare[1] = max(0, self.currentSquare[1] - 1)
+						elif event.key == pygame.K_DOWN:
+							self.currentSquare[1] = min(2, self.currentSquare[1] + 1)
+						elif event.key == pygame.K_LEFT:
+							self.currentSquare[0] = max(0, self.currentSquare[0] - 1)
+						elif event.key == pygame.K_RIGHT:
+							self.currentSquare[0] = min(2, self.currentSquare[0] + 1)
+						elif event.key == pygame.K_RETURN:
+							if tuple(self.currentSquare) in self.getPossibleMoves():
+								return tuple(self.currentSquare)
+		else:
+			while True:
+				x = input("\nX: ")
+				y = input("Y: ")
+				if x.isdigit() and y.isdigit():
+					if (x, y) in self.getPossibleMoves():
+						return (x,y)
+					else:
+						print("Invalid grid position.")
+				else:
+					print("Not a number.")
 	
 	def playMove(self, move):
 		t = {"board": [row[:] for row in self.board]}
@@ -71,31 +100,4 @@ class TicTacToe(Game):
 					print("%s," % x[i],end="")
 				print("")
 		
-	def getInput(self):
-		if self.graphics:
-			while True:
-				self.drawGame()
-				for event in pygame.event.get():
-					if event.type == pygame.KEYDOWN:
-						if event.key == pygame.K_UP:
-							self.currentSquare[1] = max(0, self.currentSquare[1] - 1)
-						elif event.key == pygame.K_DOWN:
-							self.currentSquare[1] = min(2, self.currentSquare[1] + 1)
-						elif event.key == pygame.K_LEFT:
-							self.currentSquare[0] = max(0, self.currentSquare[0] - 1)
-						elif event.key == pygame.K_RIGHT:
-							self.currentSquare[0] = min(2, self.currentSquare[0] + 1)
-						elif event.key == pygame.K_RETURN:
-							if tuple(self.currentSquare) in self.getPossibleMoves():
-								return tuple(self.currentSquare)
-		else:
-			x = -1
-			y = -1
-			
-			while not (0 <= x < 2 and 0 <= y < 2 and self.board[x][y] == 0): 
-				x = int(input("\nX: "))
-				y = int(input("Y: "))
-				if not (0 <= x < 2 and 0 <= y < 2 and self.board[x][y] == 0):
-					print("\nInvalid grid position.")
-			
-			return (x,y)
+
