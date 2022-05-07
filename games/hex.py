@@ -45,6 +45,35 @@ class Hex(Game):
 				
 		return scores[-1] - scores[1]
 		
+	def getInput(self):
+		if self.graphics:
+			while True:
+				self.drawGame()
+				for event in pygame.event.get():
+					if event.type == pygame.KEYDOWN:
+						if event.key == pygame.K_UP:
+							self.currentHexagon[1] = max(0, self.currentHexagon[1] - 1)
+						elif event.key == pygame.K_DOWN:
+							self.currentHexagon[1] = min(self.height-1, self.currentHexagon[1] + 1)
+						elif event.key == pygame.K_LEFT:
+							self.currentHexagon[0] = max(0, self.currentHexagon[0] - 1)
+						elif event.key == pygame.K_RIGHT:
+							self.currentHexagon[0] = min(self.width-1, self.currentHexagon[0] + 1)
+						elif event.key == pygame.K_RETURN:
+							if tuple(self.currentHexagon) in self.getPossibleMoves():
+								return tuple(self.currentHexagon)
+		else:
+			while True:
+				x = input("\nX: ")
+				y = input("Y: ")
+				if x.isdigit() and y.isdigit():
+					if (x, y) in self.getPossibleMoves():
+						return (x,y)
+					else:
+						print("Invalid grid position.")
+				else:
+					print("Not a number.")
+		
 	def playMove(self, move):
 		t = {"board": [row[:] for row in self.board]}
 		self.board[move[0]][move[1]] = self.currentPlayer
@@ -53,6 +82,32 @@ class Hex(Game):
 			
 		return t
 		
+	def drawGame(self):
+		if self.graphics:
+			pygame.gfxdraw.aapolygon(self.window.grid_area, ((HEXAGON_WIDTH/2, 0), (HEXAGON_WIDTH * (self.width-0.5), 0), (HEXAGON_WIDTH * (self.width) + HEXAGON_WIDTH/2 * (self.height - 2), HEXAGON_SIZE * (1.5 * self.height + 0.5)), (HEXAGON_WIDTH/2 * (self.height), HEXAGON_SIZE * (1.5 * self.height + 0.5))), self.window.colours[1])
+			pygame.gfxdraw.filled_polygon(self.window.grid_area, ((HEXAGON_WIDTH/2, 0), (HEXAGON_WIDTH * (self.width-0.5), 0), (HEXAGON_WIDTH * (self.width) + HEXAGON_WIDTH/2 * (self.height - 2), HEXAGON_SIZE * (1.5 * self.height + 0.5)), (HEXAGON_WIDTH/2 * (self.height), HEXAGON_SIZE * (1.5 * self.height + 0.5))), self.window.colours[1])
+			pygame.gfxdraw.aapolygon(self.window.grid_area, ((0, 1.5 * HEXAGON_SIZE), (self.width * HEXAGON_WIDTH, 0.5 * HEXAGON_SIZE), (HEXAGON_WIDTH * (self.width) + HEXAGON_WIDTH/2 * (self.height - 1), HEXAGON_SIZE * (1.5 * self.height - 1)), (HEXAGON_WIDTH/2 * (self.height - 1), HEXAGON_SIZE * (1.5 * self.height))), self.window.colours[-1])
+			pygame.gfxdraw.filled_polygon(self.window.grid_area, ((0, 1.5 * HEXAGON_SIZE), (self.width * HEXAGON_WIDTH, 0.5 * HEXAGON_SIZE), (HEXAGON_WIDTH * (self.width) + HEXAGON_WIDTH/2 * (self.height - 1), HEXAGON_SIZE * (1.5 * self.height - 1)), (HEXAGON_WIDTH/2 * (self.height - 1), HEXAGON_SIZE * (1.5 * self.height))), self.window.colours[-1])
+			
+			for x in range(0, len(self.board)):
+				for y in range(0, len(self.board[x])):
+					pygame.gfxdraw.aapolygon(self.window.grid_area, [((x+0.5) * HEXAGON_SIZE * math.sqrt(3) + y * HEXAGON_SIZE * math.sqrt(3)/2 + HEXAGON_SIZE * math.cos(2 * math.pi * (i / 6 + 1/12)), (y+0.675) * HEXAGON_SIZE * 1.5 + HEXAGON_SIZE * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], self.window.colours[self.board[x][y]])
+					pygame.gfxdraw.filled_polygon(self.window.grid_area, [((x+0.5) * HEXAGON_SIZE * math.sqrt(3) + y * HEXAGON_SIZE * math.sqrt(3)/2 ++ HEXAGON_SIZE * math.cos(2 * math.pi * (i / 6 + 1/12)), (y+0.675) * HEXAGON_SIZE * 1.5 + HEXAGON_SIZE * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], self.window.colours[self.board[x][y]])
+					pygame.gfxdraw.aapolygon(self.window.grid_area, [((x+0.5) * HEXAGON_SIZE * math.sqrt(3) + y * HEXAGON_SIZE * math.sqrt(3)/2 + HEXAGON_SIZE * math.cos(2 * math.pi * (i / 6 + 1/12)), (y+0.675) * HEXAGON_SIZE * 1.5 + HEXAGON_SIZE * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], (0,0,0))
+			
+			if self.human and not self.isGameOver and self.currentPlayer == 1:
+				pygame.gfxdraw.aapolygon(self.window.grid_area, [((self.currentHexagon[0]+0.5) * HEXAGON_SIZE * math.sqrt(3) + self.currentHexagon[1] * HEXAGON_SIZE * math.sqrt(3)/2 + HEXAGON_SIZE * math.cos(2 * math.pi * (i / 6 + 1/12)), (self.currentHexagon[1]+0.675) * HEXAGON_SIZE * 1.5 + HEXAGON_SIZE * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], tuple(min(255, c+150) for c in self.window.colours[self.currentPlayer]))
+				pygame.gfxdraw.filled_polygon(self.window.grid_area, [((self.currentHexagon[0]+0.5) * HEXAGON_SIZE * math.sqrt(3) + self.currentHexagon[1] * HEXAGON_SIZE * math.sqrt(3)/2 ++ HEXAGON_SIZE * math.cos(2 * math.pi * (i / 6 + 1/12)), (self.currentHexagon[1]+0.675) * HEXAGON_SIZE * 1.5 + HEXAGON_SIZE * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], tuple(min(255, c+150) for c in self.window.colours[self.currentPlayer]))
+				pygame.gfxdraw.aapolygon(self.window.grid_area, [((self.currentHexagon[0]+0.5) * HEXAGON_SIZE * math.sqrt(3) + self.currentHexagon[1] * HEXAGON_SIZE * math.sqrt(3)/2 + HEXAGON_SIZE * math.cos(2 * math.pi * (i / 6 + 1/12)), (self.currentHexagon[1]+0.675) * HEXAGON_SIZE * 1.5 + HEXAGON_SIZE * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], (0,0,0))
+				
+			self.window.root.blit(self.window.grid_area, (PADDING_X, PADDING_Y))
+			pygame.display.flip()
+		else:
+			for i in range(len(self.board)):
+				for x in self.board:
+					print("%s," % x[i],end="")
+				print("")
+				
 	def findPath(self, player):
 		frontier = []
 		cameFrom = {}
@@ -105,58 +160,3 @@ class Hex(Game):
 			path = []
 			
 		return path
-		
-	def drawGame(self):
-		if self.graphics:
-			pygame.gfxdraw.aapolygon(self.window.grid_area, ((HEXAGON_WIDTH/2, 0), (HEXAGON_WIDTH * (self.width-0.5), 0), (HEXAGON_WIDTH * (self.width) + HEXAGON_WIDTH/2 * (self.height - 2), HEXAGON_SIZE * (1.5 * self.height + 0.5)), (HEXAGON_WIDTH/2 * (self.height), HEXAGON_SIZE * (1.5 * self.height + 0.5))), self.window.colours[1])
-			pygame.gfxdraw.filled_polygon(self.window.grid_area, ((HEXAGON_WIDTH/2, 0), (HEXAGON_WIDTH * (self.width-0.5), 0), (HEXAGON_WIDTH * (self.width) + HEXAGON_WIDTH/2 * (self.height - 2), HEXAGON_SIZE * (1.5 * self.height + 0.5)), (HEXAGON_WIDTH/2 * (self.height), HEXAGON_SIZE * (1.5 * self.height + 0.5))), self.window.colours[1])
-			pygame.gfxdraw.aapolygon(self.window.grid_area, ((0, 1.5 * HEXAGON_SIZE), (self.width * HEXAGON_WIDTH, 0.5 * HEXAGON_SIZE), (HEXAGON_WIDTH * (self.width) + HEXAGON_WIDTH/2 * (self.height - 1), HEXAGON_SIZE * (1.5 * self.height - 1)), (HEXAGON_WIDTH/2 * (self.height - 1), HEXAGON_SIZE * (1.5 * self.height))), self.window.colours[-1])
-			pygame.gfxdraw.filled_polygon(self.window.grid_area, ((0, 1.5 * HEXAGON_SIZE), (self.width * HEXAGON_WIDTH, 0.5 * HEXAGON_SIZE), (HEXAGON_WIDTH * (self.width) + HEXAGON_WIDTH/2 * (self.height - 1), HEXAGON_SIZE * (1.5 * self.height - 1)), (HEXAGON_WIDTH/2 * (self.height - 1), HEXAGON_SIZE * (1.5 * self.height))), self.window.colours[-1])
-			
-			for x in range(0, len(self.board)):
-				for y in range(0, len(self.board[x])):
-					pygame.gfxdraw.aapolygon(self.window.grid_area, [((x+0.5) * HEXAGON_SIZE * math.sqrt(3) + y * HEXAGON_SIZE * math.sqrt(3)/2 + HEXAGON_SIZE * math.cos(2 * math.pi * (i / 6 + 1/12)), (y+0.675) * HEXAGON_SIZE * 1.5 + HEXAGON_SIZE * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], self.window.colours[self.board[x][y]])
-					pygame.gfxdraw.filled_polygon(self.window.grid_area, [((x+0.5) * HEXAGON_SIZE * math.sqrt(3) + y * HEXAGON_SIZE * math.sqrt(3)/2 ++ HEXAGON_SIZE * math.cos(2 * math.pi * (i / 6 + 1/12)), (y+0.675) * HEXAGON_SIZE * 1.5 + HEXAGON_SIZE * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], self.window.colours[self.board[x][y]])
-					pygame.gfxdraw.aapolygon(self.window.grid_area, [((x+0.5) * HEXAGON_SIZE * math.sqrt(3) + y * HEXAGON_SIZE * math.sqrt(3)/2 + HEXAGON_SIZE * math.cos(2 * math.pi * (i / 6 + 1/12)), (y+0.675) * HEXAGON_SIZE * 1.5 + HEXAGON_SIZE * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], (0,0,0))
-			
-			if self.human and not self.isGameOver and self.currentPlayer == 1:
-				pygame.gfxdraw.aapolygon(self.window.grid_area, [((self.currentHexagon[0]+0.5) * HEXAGON_SIZE * math.sqrt(3) + self.currentHexagon[1] * HEXAGON_SIZE * math.sqrt(3)/2 + HEXAGON_SIZE * math.cos(2 * math.pi * (i / 6 + 1/12)), (self.currentHexagon[1]+0.675) * HEXAGON_SIZE * 1.5 + HEXAGON_SIZE * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], tuple(min(255, c+150) for c in self.window.colours[self.currentPlayer]))
-				pygame.gfxdraw.filled_polygon(self.window.grid_area, [((self.currentHexagon[0]+0.5) * HEXAGON_SIZE * math.sqrt(3) + self.currentHexagon[1] * HEXAGON_SIZE * math.sqrt(3)/2 ++ HEXAGON_SIZE * math.cos(2 * math.pi * (i / 6 + 1/12)), (self.currentHexagon[1]+0.675) * HEXAGON_SIZE * 1.5 + HEXAGON_SIZE * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], tuple(min(255, c+150) for c in self.window.colours[self.currentPlayer]))
-				pygame.gfxdraw.aapolygon(self.window.grid_area, [((self.currentHexagon[0]+0.5) * HEXAGON_SIZE * math.sqrt(3) + self.currentHexagon[1] * HEXAGON_SIZE * math.sqrt(3)/2 + HEXAGON_SIZE * math.cos(2 * math.pi * (i / 6 + 1/12)), (self.currentHexagon[1]+0.675) * HEXAGON_SIZE * 1.5 + HEXAGON_SIZE * math.sin(2 * math.pi * (i / 6 + 1/12))) for i in range(6)], (0,0,0))
-				
-			self.window.root.blit(self.window.grid_area, (PADDING_X, PADDING_Y))
-			pygame.display.flip()
-		else:
-			for i in range(len(self.board)):
-				for x in self.board:
-					print("%s," % x[i],end="")
-				print("")
-		
-	def getInput(self):
-		if self.graphics:
-			while True:
-				self.drawGame()
-				for event in pygame.event.get():
-					if event.type == pygame.KEYDOWN:
-						if event.key == pygame.K_UP:
-							self.currentHexagon[1] = max(0, self.currentHexagon[1] - 1)
-						elif event.key == pygame.K_DOWN:
-							self.currentHexagon[1] = min(self.height-1, self.currentHexagon[1] + 1)
-						elif event.key == pygame.K_LEFT:
-							self.currentHexagon[0] = max(0, self.currentHexagon[0] - 1)
-						elif event.key == pygame.K_RIGHT:
-							self.currentHexagon[0] = min(self.width-1, self.currentHexagon[0] + 1)
-						elif event.key == pygame.K_RETURN:
-							if tuple(self.currentHexagon) in self.getPossibleMoves():
-								return tuple(self.currentHexagon)
-		else:
-			x = -1
-			y = -1
-			
-			while (not (0 <= x < self.width and 0 <= y < self.height)) or self.board[x][y] != 0: 
-				x = int(input("\nX: "))
-				y = int(input("Y: "))
-				if (not (0 <= x < self.width and 0 <= y < self.height)) or self.board[x][y] != 0:
-					print("\nInvalid grid position.")
-			
-			return (x,y)

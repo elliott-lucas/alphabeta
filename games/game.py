@@ -17,7 +17,7 @@ class Game(object):
 		raise NotImplementedError('Subclasses must override Game()!')
 		
 	def getInput(self):
-		raise NotImplementedError('This game does not support human players!')
+		raise NotImplementedError('Subclasses must override Game()!')
 		
 	def playMove(self):
 		raise NotImplementedError('Subclasses must override Game()!')
@@ -37,7 +37,7 @@ class Game(object):
 		self.winningPlayer = None
 		
 	def drawGame(self):
-		raise NotImplementedError('This game does not support graphics!')
+		raise NotImplementedError('Subclasses must override Game()!')
 	
 class Window():
 	def __init__(self, width, height, title):
