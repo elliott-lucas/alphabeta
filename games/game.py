@@ -32,9 +32,9 @@ class Game(object):
 	def revertGame(self, t):
 		self.__dict__.update(t)
 		self.totalMoves -= 1
-		self.currentPlayer = -self.currentPlayer
 		self.isGameOver = False
 		self.winningPlayer = None
+		self.currentPlayer = -self.currentPlayer
 		
 	def drawGame(self):
 		raise NotImplementedError('Subclasses must override Game()!')
