@@ -1,8 +1,8 @@
-# Polymorphic Alpha-Beta Pruning Program
+# Alpha-Beta Pruning Program
 
-An alpha-beta pruning program for playing arbitrary two-player adversarial games. 
+An program for playing arbitrary two-player adversarial games using the [Alpha-Beta Pruning](https://en.wikipedia.org/wiki/Alpha-beta_pruning) algorithm. 
 
-Various examples of games included (Hex, Tic Tac Toe, 21, etc.).
+Various examples of games are included (Hex, Tic Tac Toe, 21, etc.).
 
 ## Defining a Game
 
