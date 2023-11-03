@@ -1,5 +1,4 @@
 import time
-import random
 import pygame
 
 class AlphaBeta():
@@ -37,25 +36,24 @@ class AlphaBeta():
 		if depth == 0 or len(possibleMoves) == 0:
 			self.totalEvaluations += 1
 			return game.getEvaluation()
+		if game.currentPlayer == 1:
+			result = float('-inf')
+			for m in possibleMoves:
+				t = game.playMove(m)
+				result = max(result, self.miniMax(game, depth-1))
+				game.revertGame(t)
+				if result == float('inf'):
+					break
+			return result
 		else:
-			if game.currentPlayer == 1:
-				result = float('-inf')
-				for m in possibleMoves:
-					t = game.playMove(m)
-					result = max(result, self.miniMax(game, depth-1))
-					game.revertGame(t)
-					if result == float('inf'):
-						break
-				return result
-			else:
-				result = float('inf')
-				for m in possibleMoves:
-					t = game.playMove(m)
-					result = min(result, self.miniMax(game, depth-1))
-					game.revertGame(t)
-					if result == float('-inf'):
-						break
-				return result
+			result = float('inf')
+			for m in possibleMoves:
+				t = game.playMove(m)
+				result = min(result, self.miniMax(game, depth-1))
+				game.revertGame(t)
+				if result == float('-inf'):
+					break
+			return result
 		
 	def chooseMove(self, game, depth, prune):
 		possibleMoves = game.getPossibleMoves()
@@ -75,8 +73,8 @@ class AlphaBeta():
 				bestScore = max(bestScore, possibleMoves[m])
 			else:
 				bestScore = min(bestScore, possibleMoves[m])
-		
-		move, _ = random.choice(list(filter(lambda x: x[1] == bestScore, possibleMoves.items())))
+				
+		move = list(possibleMoves.keys())[list(possibleMoves.values()).index(bestScore)]
 		
 		return move
 
