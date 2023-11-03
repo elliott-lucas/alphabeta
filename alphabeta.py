@@ -11,28 +11,27 @@ class AlphaBeta():
 		if depth == 0 or len(possibleMoves) == 0:
 			self.totalEvaluations += 1
 			return game.getEvaluation()
+		if game.currentPlayer == 1:
+			result = float('-inf')
+			for m in possibleMoves:
+				t = game.playMove(m)
+				result = max(result, self.alphaBeta(game, depth-1, alpha, beta))
+				game.revertGame(t)
+				if result >= beta or result == float('inf'):
+					break
+				alpha = max(alpha, result)
+			return result
 		else:
-			if game.currentPlayer == 1:
-				result = float('-inf')
-				for m in possibleMoves:
-					t = game.playMove(m)
-					result = max(result, self.alphaBeta(game, depth-1, alpha, beta))
-					game.revertGame(t)
-					if result >= beta or result == float('inf'):
-						break
-					alpha = max(alpha, result)
-				return result
-			else:
-				result = float('inf')
-				for m in possibleMoves:
-					t = game.playMove(m)
-					result = min(result, self.alphaBeta(game, depth-1, alpha, beta))
-					game.revertGame(t)
-					if result <= alpha or result == float('-inf'):
-						break
-					beta = min(beta, result)
-				return result
-				
+			result = float('inf')
+			for m in possibleMoves:
+				t = game.playMove(m)
+				result = min(result, self.alphaBeta(game, depth-1, alpha, beta))
+				game.revertGame(t)
+				if result <= alpha or result == float('-inf'):
+					break
+				beta = min(beta, result)
+			return result
+			
 	def miniMax(self, game, depth):
 		possibleMoves = game.getPossibleMoves()
 		if depth == 0 or len(possibleMoves) == 0:
