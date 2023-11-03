@@ -13,7 +13,7 @@ class Hex(Game):
 		super().__init__(graphics, human)
 		self.width     = w
 		self.height    = h
-		self.swap_rule = swap
+		self.swap      = swap
 		self.board     = [[0 for y in range(self.width)] for x in range(self.height)]
 		
 		if graphics:
@@ -28,7 +28,7 @@ class Hex(Game):
 		possibleMoves = {}
 		for x in range(0, self.width):
 			for y in range(0, self.height):
-				if self.swap_rule and self.board[x][y] == 1 and self.currentPlayer == -1 and self.totalMoves == 1:
+				if self.swap and self.board[x][y] == 1 and self.currentPlayer == -1 and self.totalMoves == 1:
 						possibleMoves[(x, y)] = 0
 				if self.board[x][y] == 0:
 					possibleMoves[(x, y)] = 0
@@ -77,9 +77,7 @@ class Hex(Game):
 	def playMove(self, move):
 		t = {"board": [row[:] for row in self.board]}
 		self.board[move[0]][move[1]] = self.currentPlayer
-
 		self.updateGame()
-			
 		return t
 		
 	def drawGame(self):
@@ -132,7 +130,7 @@ class Hex(Game):
 				if "goal" not in cameFrom or costSoFar[current] < costSoFar["goal"]:
 					costSoFar["goal"] = costSoFar[current]
 					cameFrom["goal"] = current
-			
+					
 			neighbours = [(current[0], current[1]-1), (current[0]+1, current[1]-1), (current[0]-1, current[1]), (current[0]+1, current[1]), (current[0]-1, current[1]+1), (current[0], current[1]+1)]
 			valid = []
 				
